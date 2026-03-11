@@ -1,0 +1,16 @@
+{
+  "name": "lottery-form",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "clasp": "clasp"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@google/clasp": "^3.2.0"
+  }
+}
