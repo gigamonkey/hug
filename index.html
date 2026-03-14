@@ -539,6 +539,7 @@ const DEBUG = true;
 let isStaff = false;
 let isUpperGrade = false;
 let assignedLc = null;
+let uiVersion = 0; // incremented on reset; async callbacks check this to avoid acting on stale results
 
 const REQUIRED = [ 'AC', 'BIHS' ];
 const SMALL_LCS = new Set(['AHA', 'AMPS', 'CAS']);
@@ -702,7 +703,9 @@ const showCurrentRanks = (currentRanks) => {
 };
 
 const getRankings = (studentEmail) => {
+  const v = uiVersion;
   google.script.run.withSuccessHandler(res => {
+    if (uiVersion !== v) return;
     res = JSON.parse(res);
     if (res.rankings) {
       showCurrentRanks(res.rankings);
@@ -831,7 +834,9 @@ const setupUI = (res) => {
     if (isClosed()) {
       $('#disabledDialog').showModal();
     }
+    const v = uiVersion;
     google.script.run.withSuccessHandler(lc => {
+      if (uiVersion !== v) return;
       if (lc) {
         initFromUpperGrades(lc);
       }
@@ -845,6 +850,7 @@ const DEBUG_USERS = new Set(['peterseibel@berkeley.net', 'keldonclegg@berkeley.n
 const initialWidgetHTML = $('.widget').innerHTML;
 
 const resetUI = () => {
+  uiVersion++;
   isStaff = false;
   isUpperGrade = false;
   assignedLc = null;
