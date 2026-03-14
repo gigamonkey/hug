@@ -356,6 +356,28 @@
       </p>
     </section>
 
+    <section id="staff-instructions" style="display:none">
+      <p>
+        <b>Step 1</b> Enter the student's email, student ID, and the reason for
+        this submission in the <b class="area">Student</b> section above.
+      </p>
+      <p>
+        <b>Step 2</b> Drag any LCs from the <b class="area">Unranked LCs</b>
+        area into the <b class="area">Currently ranked</b> area and put them in
+        the order of the student's preference. You may drag any LC back out to
+        remove it from the rankings. This form will allow you to enter any LCs
+        combo for any student but in general you should follow the requirements
+        enforced on the studets: rising 10th graders must rank both AC and BIHS
+        and upper-grade students must rank either their current LC or AC unless
+        they are coming from HB or MLP in which case they follow the same rules
+        as rising 10th graders.
+      </p>
+      <p>
+        <b>Step 3</b> Once the rankings are in the desired order, press the
+        blue <b class="area">Save</b> button.
+      </p>
+    </section>
+
     <section id="upper-grade-instructions" style="display:none">
       <p>
         <b>Step 1</b> Drag any LCs from the <b class="area">Unranked LCs</b>
@@ -606,7 +628,7 @@ const centerOf = (e) => {
 const maybeEnableButton = () => {
   //if (isClosed()) return;
   if (!mandatoryRanked()) {
-    disableButton('Must rank AC and BIHS');
+    disableButton(isStaff ? 'Rank at least one LC' : 'Must rank AC and BIHS');
   } else if (isStaff && !staffFieldsValid()) {
     disableButton('Fill on-behalf-of information');
   } else {
@@ -617,7 +639,7 @@ const maybeEnableButton = () => {
 const staffFieldsValid = () => [...$$('#for-student input')].every(i => i.validity.valid);
 
 const mandatoryRanked = () => {
-  if (isUpperGrade) return ranks.children.length > 0;
+  if (isUpperGrade || isStaff) return ranks.children.length > 0;
   const ranked = new Set([...ranks.children].map(lcName));
   return REQUIRED.every(a => ranked.has(a));
 }
@@ -648,7 +670,7 @@ const maybeShowEmptyNote = () => {
 };
 
 const maybeRemoveMandatory = () => {
-  if (mandatory.children.length == 0) mandatory.parentNode.remove();
+  if (mandatory.children.length == 0) mandatory.parentNode?.remove();
 };
 
 const makeTile = (name, pos) => {
@@ -783,11 +805,24 @@ const setTitle = (heading, subtitle) => {
   $('#subtitle').innerText = subtitle;
 };
 
+const initStaffMode = () => {
+  $('#instructions').style.display = 'none';
+  $('#staff-instructions').style.display = 'block';
+  smallSchools.closest('fieldset').querySelector('legend').innerText = 'Unranked LCs';
+  [...mandatory.children].forEach(tile => {
+    clearRank(tile);
+    smallSchools.prepend(tile);
+  });
+  mandatory.parentNode.remove();
+  REQUIRED.forEach(r => SLCS.add(r));
+};
+
 const setupUI = (res) => {
   $('#whoami').innerText = res;
   if (res.match(/@berkeley\.net/)) {
     isStaff = true;
     $('#for-student').style.display = 'flex';
+    initStaffMode();
     disableButton('Enter student email to start');
     setTitle('Adult Form', 'On behalf of a student for Rising 10th Grade Lottery');
   } else if (res.match(/@students\.berkeley\.net/)) {
@@ -805,7 +840,7 @@ const setupUI = (res) => {
   }
 };
 
-const DEBUG_USERS = new Set(['peterseibel@berkeley.net']);
+const DEBUG_USERS = new Set(['peterseibel@berkeley.net', 'keldonclegg@berkeley.net']);
 
 const initialWidgetHTML = $('.widget').innerHTML;
 
