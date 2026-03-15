@@ -25,24 +25,37 @@ fi
 LINE_COUNT=$(echo "$DEPLOYMENT_LINES" | wc -l | tr -d ' ')
 
 if [ "$LINE_COUNT" -eq 1 ]; then
-  DEPLOYMENT_ID=$(echo "$DEPLOYMENT_LINES" | awk '{print $2}')
+  SELECTED_LINE="$DEPLOYMENT_LINES"
 else
   echo "Multiple deployments found. Choose one:"
   echo "$DEPLOYMENT_LINES" | nl -w1 -s') '
   printf "Choice: "
   read -r CHOICE
-  DEPLOYMENT_ID=$(echo "$DEPLOYMENT_LINES" | sed -n "${CHOICE}p" | awk '{print $2}')
-  if [ -z "$DEPLOYMENT_ID" ]; then
+  SELECTED_LINE=$(echo "$DEPLOYMENT_LINES" | sed -n "${CHOICE}p")
+  if [ -z "$SELECTED_LINE" ]; then
     echo "Error: invalid choice" >&2
     exit 1
   fi
 fi
 
+DEPLOYMENT_ID=$(echo "$SELECTED_LINE" | awk '{print $2}')
+# Extract description from "- <id> @<version> - <description>" (empty if none)
+DEPLOYMENT_DESC=$(echo "$SELECTED_LINE" | sed -n 's/^- [^ ]* @[^ ]* - \(.*\)/\1/p')
+
+update_deployment() {
+  local id="$1" version="$2"
+  if [ -n "$DEPLOYMENT_DESC" ]; then
+    $CLASP update-deployment "$id" -V "$version" -d "$DEPLOYMENT_DESC"
+  else
+    $CLASP update-deployment "$id" -V "$version"
+  fi
+}
+
 if [ "$1" = "--rollback" ]; then
   [ $# -eq 2 ] || usage
   VERSION="$2"
   echo "Rolling back to version $VERSION (deployment $DEPLOYMENT_ID)..."
-  $CLASP update-deployment "$DEPLOYMENT_ID" -V "$VERSION" -d "rollback to v$VERSION"
+  update_deployment "$DEPLOYMENT_ID" "$VERSION"
   echo "Done."
   exit 0
 fi
@@ -63,5 +76,5 @@ if [ -z "$VERSION" ]; then
 fi
 
 echo "Redeploying to version $VERSION (deployment $DEPLOYMENT_ID)..."
-$CLASP update-deployment "$DEPLOYMENT_ID" -V "$VERSION" -d "$DESCRIPTION"
+update_deployment "$DEPLOYMENT_ID" "$VERSION"
 echo "Done."
