@@ -889,7 +889,7 @@ if (DEBUG) {
       <input id="debug-email" type="text" placeholder="Enter email to simulate..." style="flex:1;padding:3px">
     </div>`);
     document.body.prepend(bar);
-    document.body.style.paddingTop = '36px';
+    //document.body.style.paddingTop = '36px';
     const applyDebugEmail = () => {
       resetUI();
       setupUI($('#debug-email').value || realEmail);
