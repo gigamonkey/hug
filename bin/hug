@@ -86,7 +86,7 @@ cmd_init() {
   if [ -n "$script_id" ]; then
     # Import mode: clone an existing project
     echo "Importing project $script_id..."
-    $clasp clone "$script_id"
+    run_clasp "$clasp" clone "$script_id"
 
     echo ""
     echo "Project imported. Next steps:"
@@ -112,7 +112,7 @@ cmd_init() {
     fi
 
     echo "Creating Apps Script project '$title' (type: $type)..."
-    $clasp create --type "$type" --title "$title"
+    run_clasp "$clasp" create --type "$type" --title "$title"
 
     echo ""
     echo "Project ready. Next steps:"
@@ -151,10 +151,10 @@ cmd_fork() {
 
   echo "Creating new Apps Script project '$title'..."
   rm -f .clasp.json
-  $clasp create --type standalone --title "$title"
+  run_clasp "$clasp" create --type standalone --title "$title"
 
   echo "Pushing code to new project..."
-  $clasp push
+  run_clasp "$clasp" push
 
   echo ""
   echo "Fork complete. This directory now points to a new Apps Script project."
@@ -200,11 +200,11 @@ cmd_deploy() {
   local description="${*:-}"
 
   echo "Pushing..."
-  $clasp push
+  run_clasp "$clasp" push
 
   echo "Creating version..."
   local version_output
-  version_output=$($clasp create-version "$description")
+  version_output=$(run_clasp "$clasp" create-version "$description")
   echo "$version_output"
   local version
   version=$(echo "$version_output" | grep -oE 'version [0-9]+' | grep -oE '[0-9]+')
@@ -219,7 +219,7 @@ cmd_deploy() {
 
   if [ -z "$line" ]; then
     echo "No existing deployment found. Creating one..."
-    $clasp create-deployment -V "$version" -d "$description"
+    run_clasp "$clasp" create-deployment -V "$version" -d "$description"
   else
     local id desc
     id=$(deployment_id "$line")
@@ -235,7 +235,7 @@ cmd_deploy() {
 
 cmd_push() {
   local clasp; clasp=$(find_clasp)
-  $clasp push "$@"
+  run_clasp "$clasp" push "$@"
 }
 
 cmd_pull() {
@@ -260,22 +260,22 @@ cmd_pull() {
   fi
 
   local clasp; clasp=$(find_clasp)
-  $clasp pull "$@"
+  run_clasp "$clasp" pull "$@"
 }
 
 cmd_open() {
   local clasp; clasp=$(find_clasp)
-  $clasp open "$@"
+  run_clasp "$clasp" open "$@"
 }
 
 cmd_versions() {
   local clasp; clasp=$(find_clasp)
-  $clasp list-versions "$@"
+  run_clasp "$clasp" list-versions "$@"
 }
 
 cmd_deployments() {
   local clasp; clasp=$(find_clasp)
-  $clasp list-deployments "$@"
+  run_clasp "$clasp" list-deployments "$@"
 }
 
 # ─── dispatch ────────────────────────────────────────────────────────────────

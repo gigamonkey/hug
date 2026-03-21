@@ -24,6 +24,25 @@ find_clasp() {
   fi
 }
 
+# Run clasp and check for auth errors on failure
+run_clasp() {
+  local clasp="$1"
+  shift
+
+  local output
+  output=$("$clasp" "$@" 2>&1) && { echo "$output"; return 0; }
+  local exit_code=$?
+
+  echo "$output" >&2
+
+  if echo "$output" | grep -qiE "authorize|unauthorized|unauthenticated|login|credential|ENOENT.*clasprc|401"; then
+    echo "" >&2
+    echo "Hint: you may need to log in. Run 'npx clasp login' to authenticate." >&2
+  fi
+
+  return $exit_code
+}
+
 # Resolve the hug package root (where templates/ lives)
 hug_root() {
   local source="${BASH_SOURCE[0]}"
@@ -41,7 +60,7 @@ select_deployment() {
   local clasp="$1"
 
   local lines
-  lines=$($clasp list-deployments | grep '^-' | grep -v '@HEAD')
+  lines=$(run_clasp "$clasp" list-deployments | grep '^-' | grep -v '@HEAD')
 
   if [ -z "$lines" ]; then
     echo ""
@@ -82,8 +101,8 @@ deployment_desc() {
 update_deployment() {
   local clasp="$1" id="$2" version="$3" desc="$4"
   if [ -n "$desc" ]; then
-    $clasp update-deployment "$id" -V "$version" -d "$desc"
+    run_clasp "$clasp" update-deployment "$id" -V "$version" -d "$desc"
   else
-    $clasp update-deployment "$id" -V "$version"
+    run_clasp "$clasp" update-deployment "$id" -V "$version"
   fi
 }
