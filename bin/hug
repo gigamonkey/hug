@@ -14,13 +14,13 @@ hug $VERSION — a lightweight wrapper around clasp
 Usage: hug <command> [options]
 
 Project commands:
-  init [--template blank|webapp] [name]   Create a new Apps Script project
-  import <scriptId>                       Import an existing Apps Script project
-  clone <scriptId> [directory]            Fork a project into a new script
+  init [--template blank|webapp] [name]   Create a new project from a template
+  init --scriptId <id> [name]             Import an existing Apps Script project
+  fork                                    Create a new Apps Script project from current code
 
 Development commands:
   push                Push local files to Apps Script
-  pull                Pull remote files from Apps Script
+  pull [-f|--force]   Pull remote files (refuses if uncommitted changes)
   open                Open the project in the Apps Script editor
 
 Deployment commands:
@@ -36,117 +36,120 @@ EOF
 # ─── init ────────────────────────────────────────────────────────────────────
 
 cmd_init() {
-  local template="blank" name=""
+  local template="" name="" script_id="" force=false
 
   while [ $# -gt 0 ]; do
     case "$1" in
       --template) template="$2"; shift 2 ;;
+      --scriptId) script_id="$2"; shift 2 ;;
+      -f|--force) force=true; shift ;;
       --help)
-        echo "Usage: hug init [--template blank|webapp] [name]"
+        echo "Usage: hug init [--template blank|webapp] [-f|--force] [name]"
+        echo "       hug init --scriptId <id> [-f|--force] [name]"
         echo ""
         echo "Creates a new Apps Script project. If name is given, creates a directory."
-        echo "Templates: blank (default), webapp"
+        echo "Refuses if the directory already exists (use -f to override)."
+        echo ""
+        echo "Options:"
+        echo "  --template   Start from a template: blank (default), webapp"
+        echo "  --scriptId   Import an existing Apps Script project by ID"
+        echo "  -f, --force  Use an existing directory even if it already exists"
         return 0 ;;
       *) name="$1"; shift ;;
     esac
   done
 
-  local template_dir="$HUG_ROOT/templates/$template"
-  if [ ! -d "$template_dir" ]; then
-    echo "Error: unknown template '$template'. Available: blank, webapp" >&2
+  # Validate flags
+  if [ -n "$script_id" ] && [ -n "$template" ]; then
+    echo "Error: --scriptId and --template are mutually exclusive" >&2
     return 1
   fi
 
   local project_dir="."
   if [ -n "$name" ]; then
     project_dir="$name"
+    if [ -d "$project_dir" ] && [ "$force" = false ]; then
+      echo "Error: directory '$project_dir' already exists. Use -f to override." >&2
+      return 1
+    fi
     mkdir -p "$project_dir"
+  elif [ -f .clasp.json ] && [ "$force" = false ]; then
+    echo "Error: .clasp.json already exists in this directory. Use -f to override." >&2
+    return 1
   fi
-
-  echo "Copying $template template..."
-  cp -r "$template_dir"/* "$project_dir"/
 
   cd "$project_dir"
-
   ensure_clasp
-
   local clasp
   clasp=$(find_clasp)
 
-  local title="${name:-$(basename "$(pwd)")}"
-  local type="standalone"
-  if [ "$template" = "webapp" ]; then
-    type="webapp"
-  fi
+  if [ -n "$script_id" ]; then
+    # Import mode: clone an existing project
+    echo "Importing project $script_id..."
+    $clasp clone "$script_id"
 
-  echo "Creating Apps Script project '$title' (type: $type)..."
-  $clasp create --type "$type" --title "$title"
+    echo ""
+    echo "Project imported. Next steps:"
+    echo "  hug pull        Fetch the latest code"
+    echo "  hug open        Open in the Apps Script editor"
+  else
+    # Template mode: create a new project
+    template="${template:-blank}"
 
-  echo ""
-  echo "Project ready. Next steps:"
-  echo "  hug push        Push code to Apps Script"
-  echo "  hug open        Open in the Apps Script editor"
-  if [ "$template" = "webapp" ]; then
-    echo "  hug deploy      Push, version, and create a deployment"
+    local template_dir="$HUG_ROOT/templates/$template"
+    if [ ! -d "$template_dir" ]; then
+      echo "Error: unknown template '$template'. Available: blank, webapp" >&2
+      return 1
+    fi
+
+    echo "Copying $template template..."
+    cp -r "$template_dir"/* ./
+
+    local title="${name:-$(basename "$(pwd)")}"
+    local type="standalone"
+    if [ "$template" = "webapp" ]; then
+      type="webapp"
+    fi
+
+    echo "Creating Apps Script project '$title' (type: $type)..."
+    $clasp create --type "$type" --title "$title"
+
+    echo ""
+    echo "Project ready. Next steps:"
+    echo "  hug push        Push code to Apps Script"
+    echo "  hug open        Open in the Apps Script editor"
+    if [ "$template" = "webapp" ]; then
+      echo "  hug deploy      Push, version, and create a deployment"
+    fi
   fi
 }
 
-# ─── import ──────────────────────────────────────────────────────────────────
+# ─── fork ─────────────────────────────────────────────────────────────────────
 
-cmd_import() {
-  if [ $# -eq 0 ] || [ "$1" = "--help" ]; then
-    echo "Usage: hug import <scriptId>"
+cmd_fork() {
+  if [ "${1:-}" = "--help" ]; then
+    echo "Usage: hug fork"
     echo ""
-    echo "Clones an existing Apps Script project into the current directory."
-    [ "$1" = "--help" ] && return 0 || return 1
+    echo "Creates a new Apps Script project from the current local code."
+    echo "Replaces .clasp.json with a new project, then pushes code to it."
+    echo ""
+    echo "Useful with git branches: fork on a branch to get a separate"
+    echo "Apps Script project for each branch."
+    return 0
   fi
 
-  local script_id="$1"
-
-  ensure_clasp
+  if [ ! -f .clasp.json ]; then
+    echo "Error: no .clasp.json found. Run 'hug init' first." >&2
+    return 1
+  fi
 
   local clasp
   clasp=$(find_clasp)
-
-  echo "Cloning project $script_id..."
-  $clasp clone "$script_id"
-
-  echo ""
-  echo "Project imported. Run 'hug pull' to fetch the latest code."
-}
-
-# ─── clone ───────────────────────────────────────────────────────────────────
-
-cmd_clone() {
-  if [ $# -eq 0 ] || [ "$1" = "--help" ]; then
-    echo "Usage: hug clone <scriptId> [directory]"
-    echo ""
-    echo "Pulls code from an existing project, creates a new Apps Script project,"
-    echo "and pushes the code to it. Useful for forking."
-    [ "${1:-}" = "--help" ] && return 0 || return 1
-  fi
-
-  local source_id="$1"
-  local dir="${2:-.}"
-
-  if [ "$dir" != "." ]; then
-    mkdir -p "$dir"
-  fi
-  cd "$dir"
-
-  ensure_clasp
-
-  local clasp
-  clasp=$(find_clasp)
-
-  echo "Pulling code from source project..."
-  $clasp clone "$source_id"
 
   local title
   title="$(basename "$(pwd)")"
 
   echo "Creating new Apps Script project '$title'..."
-  # Remove the cloned .clasp.json so create makes a fresh one
   rm -f .clasp.json
   $clasp create --type standalone --title "$title"
 
@@ -154,7 +157,7 @@ cmd_clone() {
   $clasp push
 
   echo ""
-  echo "Clone complete. New project created with code from $source_id."
+  echo "Fork complete. This directory now points to a new Apps Script project."
 }
 
 # ─── deploy ──────────────────────────────────────────────────────────────────
@@ -236,6 +239,26 @@ cmd_push() {
 }
 
 cmd_pull() {
+  local force=false
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -f|--force) force=true; shift ;;
+      --help)
+        echo "Usage: hug pull [-f|--force]"
+        echo ""
+        echo "Pulls remote files from Apps Script, overwriting local files."
+        echo "Refuses to run if there are uncommitted changes (use -f to override)."
+        return 0 ;;
+      *) break ;;
+    esac
+  done
+
+  if [ "$force" = false ] && ! git diff --quiet 2>/dev/null; then
+    echo "Error: you have uncommitted changes. Commit or stash them first," >&2
+    echo "or use 'hug pull --force' to overwrite." >&2
+    return 1
+  fi
+
   local clasp; clasp=$(find_clasp)
   $clasp pull "$@"
 }
@@ -267,8 +290,7 @@ shift
 
 case "$command" in
   init)        cmd_init "$@" ;;
-  import)      cmd_import "$@" ;;
-  clone)       cmd_clone "$@" ;;
+  fork)        cmd_fork "$@" ;;
   deploy)      cmd_deploy "$@" ;;
   push)        cmd_push "$@" ;;
   pull)        cmd_pull "$@" ;;

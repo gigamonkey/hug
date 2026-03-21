@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-`hug` is a lightweight bash CLI that wraps [clasp](https://github.com/google/clasp) to provide opinionated project management for Google Apps Script projects. It handles project creation from templates, importing existing projects, and a push→version→deploy workflow.
+`hug` is a lightweight bash CLI that wraps [clasp](https://github.com/google/clasp) to provide opinionated project management for Google Apps Script projects. It handles project creation (from templates or by importing existing projects), forking projects for branch-based workflows, and a push→version→deploy workflow.
 
 ## Project structure
 
@@ -19,13 +19,13 @@ package.json         # npm package with bin field pointing to bin/hug
 ## Key commands
 
 ```bash
-./bin/hug init [--template blank|webapp] [name]   # create new project
-./bin/hug import <scriptId>                        # import existing project
-./bin/hug clone <scriptId> [dir]                   # fork a project
-./bin/hug deploy "description"                     # push + version + deploy
-./bin/hug deploy --rollback <version>              # roll back
-./bin/hug push / pull / open                       # clasp passthrough
-./bin/hug versions / deployments                   # list versions/deployments
+./bin/hug init [--template blank|webapp] [name]   # create new project from template
+./bin/hug init --scriptId <id> [name]             # import existing project
+./bin/hug fork                                    # new Apps Script project from current code
+./bin/hug deploy "description"                    # push + version + deploy
+./bin/hug deploy --rollback <version>             # roll back
+./bin/hug push / pull [-f] / open                  # clasp passthrough (pull checks git status)
+./bin/hug versions / deployments                  # list versions/deployments
 ```
 
 ## Development

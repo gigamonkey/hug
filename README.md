@@ -37,25 +37,25 @@ This creates the directory, copies template files, installs clasp, and creates t
 ### Import an existing project
 
 ```bash
-cd my-project
-hug import <scriptId>
+hug init --scriptId <scriptId> my-project
 ```
 
-Clones an existing Apps Script project into the current directory and sets up npm/clasp.
+Imports an existing Apps Script project into a new directory and sets up npm/clasp.
 
-### Clone (fork) a project
+### Fork a project
 
 ```bash
-hug clone <scriptId> my-fork
+hug fork
 ```
 
-Pulls code from an existing project, creates a new Apps Script project, and pushes the code to it.
+Creates a new Apps Script project from the current local code. Useful with git branches — fork on a branch to get a separate Apps Script project you can develop against independently.
 
 ### Push / Pull / Open
 
 ```bash
 hug push          # push local files to Apps Script
-hug pull          # pull remote files from Apps Script
+hug pull          # pull remote files (refuses if uncommitted changes)
+hug pull -f       # pull even with uncommitted changes
 hug open          # open in the Apps Script editor
 ```
 
@@ -85,18 +85,13 @@ hug deployments
 - **blank** — minimal `appsscript.json` + empty `Code.js`
 - **webapp** — `doGet()` serving an `index.html`, with webapp config in the manifest
 
-## Multi-environment pattern
+## Branch-per-environment pattern
 
-For dev/prod setups, keep separate clasp configs:
-
-```
-dev.clasp.json
-prod.clasp.json
-```
-
-Copy the one you want to `.clasp.json` before running commands:
+Use `hug fork` with git branches to maintain separate Apps Script projects:
 
 ```bash
-cp dev.clasp.json .clasp.json
-hug push
+git checkout -b staging
+hug fork          # creates a new Apps Script project, updates .clasp.json
+hug deploy        # deploys to the staging project
+git checkout main # .clasp.json switches back to the production project
 ```
