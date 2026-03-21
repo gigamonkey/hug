@@ -68,15 +68,7 @@ cmd_init() {
 
   cd "$project_dir"
 
-  if [ ! -f package.json ]; then
-    echo "Initializing npm project..."
-    npm init -y --quiet >/dev/null
-  fi
-
-  if [ ! -d node_modules/.bin ] || [ ! -x node_modules/.bin/clasp ]; then
-    echo "Installing clasp..."
-    npm install --save-dev @google/clasp --quiet >/dev/null
-  fi
+  ensure_clasp
 
   local clasp
   clasp=$(find_clasp)
@@ -111,15 +103,7 @@ cmd_import() {
 
   local script_id="$1"
 
-  if [ ! -f package.json ]; then
-    echo "Initializing npm project..."
-    npm init -y --quiet >/dev/null
-  fi
-
-  if [ ! -d node_modules/.bin ] || [ ! -x node_modules/.bin/clasp ]; then
-    echo "Installing clasp..."
-    npm install --save-dev @google/clasp --quiet >/dev/null
-  fi
+  ensure_clasp
 
   local clasp
   clasp=$(find_clasp)
@@ -150,12 +134,7 @@ cmd_clone() {
   fi
   cd "$dir"
 
-  if [ ! -f package.json ]; then
-    npm init -y --quiet >/dev/null
-  fi
-  if [ ! -d node_modules/.bin ] || [ ! -x node_modules/.bin/clasp ]; then
-    npm install --save-dev @google/clasp --quiet >/dev/null
-  fi
+  ensure_clasp
 
   local clasp
   clasp=$(find_clasp)

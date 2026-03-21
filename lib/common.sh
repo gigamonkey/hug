@@ -1,5 +1,17 @@
 # common.sh — shared functions for hug CLI
 
+# Ensure package.json exists and clasp is installed locally
+ensure_clasp() {
+  if [ ! -f package.json ]; then
+    echo "Initializing npm project..."
+    npm init -y --quiet >/dev/null
+  fi
+  if [ ! -d node_modules/.bin ] || [ ! -x node_modules/.bin/clasp ]; then
+    echo "Installing clasp..."
+    npm install --save-dev @google/clasp --quiet >/dev/null
+  fi
+}
+
 # Resolve the path to clasp, preferring local install
 find_clasp() {
   if [ -x "./node_modules/.bin/clasp" ]; then
