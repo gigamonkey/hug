@@ -127,19 +127,40 @@ cmd_init() {
 # ─── fork ─────────────────────────────────────────────────────────────────────
 
 cmd_fork() {
-  if [ "${1:-}" = "--help" ]; then
-    echo "Usage: hug fork"
-    echo ""
-    echo "Creates a new Apps Script project from the current local code."
-    echo "Replaces .clasp.json with a new project, then pushes code to it."
-    echo ""
-    echo "Useful with git branches: fork on a branch to get a separate"
-    echo "Apps Script project for each branch."
-    return 0
-  fi
+  local force=false
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -f|--force) force=true; shift ;;
+      --help)
+        echo "Usage: hug fork [-f|--force]"
+        echo ""
+        echo "Creates a new Apps Script project from the current local code."
+        echo "Replaces .clasp.json with a new project, then pushes code to it."
+        echo ""
+        echo "Refuses if the current project is container-bound (use -f to override)."
+        echo ""
+        echo "Useful with git branches: fork on a branch to get a separate"
+        echo "Apps Script project for each branch."
+        return 0 ;;
+      *) shift ;;
+    esac
+  done
 
   if [ ! -f .clasp.json ]; then
     echo "Error: no .clasp.json found. Run 'hug init' first." >&2
+    return 1
+  fi
+
+  if [ "$force" = false ] && grep -q '"parentId"' .clasp.json 2>/dev/null; then
+    local parent_id
+    parent_id=$(grep '"parentId"' .clasp.json | sed 's/.*"parentId"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+    echo "Error: this is a container-bound script. Forking will create a standalone" >&2
+    echo "project, but the code may depend on its container (e.g. by calling." >&2
+    echo "getActiveSpreadsheet())." >&2
+    echo "" >&2
+    echo "Container: https://drive.google.com/file/d/$parent_id" >&2
+    echo "" >&2
+    echo "Use 'hug fork --force' to fork anyway." >&2
     return 1
   fi
 

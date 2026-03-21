@@ -5,7 +5,7 @@ A lightweight wrapper around [clasp](https://github.com/google/clasp) for managi
 ## Install
 
 ```bash
-npm install -g hug-clasp
+npm install -g @peterseibel/hug
 ```
 
 Or clone this repo and link it:

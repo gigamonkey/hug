@@ -28,6 +28,30 @@ package.json         # npm package with bin field pointing to bin/hug
 ./bin/hug versions / deployments                  # list versions/deployments
 ```
 
+## Design decisions
+
+### Deployments
+
+Apps Script deployments are mainly useful for web apps (stable URL) and API
+executables. Hug takes an opinionated approach: one deployment per project,
+managed via `hug deploy`. If multiple deployments exist (e.g. created directly
+via clasp), hug handles them gracefully — `select_deployment` in `common.sh`
+prompts the user to pick one. But hug doesn't provide commands to create or
+delete individual deployments.
+
+Multiple deployments on a single script share script properties, so they all
+operate on the same underlying data (e.g. the same spreadsheet). This makes
+them suitable for variant UIs against the same data, but not for dev/prod
+separation. For dev/prod, use `hug fork` + git branches instead — each branch
+gets its own script project with independent properties and deployments.
+
+### Auth
+
+Hug does not wrap `clasp login`. Auth credentials are stored globally in
+`~/.clasprc.json` and persist across projects. Instead, all clasp invocations
+go through `run_clasp` which detects auth errors and suggests running
+`npx clasp login`.
+
 ## Development
 
 There is no build step or test suite. The CLI is pure bash. To test locally:
