@@ -22,9 +22,10 @@ package.json         # npm package with bin field pointing to bin/hug
 ./bin/hug init [--template blank|webapp] [name]   # create new project from template
 ./bin/hug init --scriptId <id> [name]             # import existing project
 ./bin/hug fork                                    # new Apps Script project from current code
+./bin/hug config set KEY=VALUE                    # manage config.js
 ./bin/hug deploy "description"                    # push + version + deploy
 ./bin/hug deploy --rollback <version>             # roll back
-./bin/hug push / pull [-f] / open                  # clasp passthrough (pull checks git status)
+./bin/hug push / pull [-f] / open                 # clasp passthrough (pull checks git status)
 ./bin/hug versions / deployments                  # list versions/deployments
 ```
 
@@ -44,6 +45,14 @@ operate on the same underlying data (e.g. the same spreadsheet). This makes
 them suitable for variant UIs against the same data, but not for dev/prod
 separation. For dev/prod, use `hug fork` + git branches instead — each branch
 gets its own script project with independent properties and deployments.
+
+### Config
+
+`hug config` manages a local `config.js` file (JS constants object) that gets
+pushed with the code. This avoids the heavy GCP setup required by `clasp run`
+for setting script properties. Config values are in source/git, which is fine
+for spreadsheet IDs etc. but not for secrets. Each git branch can have different
+config values, pairing well with `hug fork`.
 
 ### Auth
 

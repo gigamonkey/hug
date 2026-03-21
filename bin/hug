@@ -23,6 +23,11 @@ Development commands:
   pull [-f|--force]   Pull remote files (refuses if uncommitted changes)
   open                Open the project in the Apps Script editor
 
+Configuration:
+  config                        List config values
+  config set KEY=VALUE ...      Set config values (writes config.js)
+  config unset KEY ...          Remove config values
+
 Deployment commands:
   deploy [description]          Push, version, and update deployment
   deploy --rollback <version>   Roll back to a previous version
@@ -252,6 +257,130 @@ cmd_deploy() {
   echo "Done."
 }
 
+# ─── config ──────────────────────────────────────────────────────────────────
+
+# Read config.js and output associative key-value lines: KEY=VALUE
+_read_config() {
+  if [ ! -f config.js ]; then
+    return 1
+  fi
+  grep -E "^  [A-Za-z_][A-Za-z0-9_]*:" config.js | sed "s/^  \([A-Za-z_][A-Za-z0-9_]*\): *['\"]\\(.*\\)['\"],\$/\\1=\\2/"
+}
+
+# Write config.js from KEY=VALUE lines on stdin
+_write_config() {
+  local entries=""
+  while IFS='=' read -r key value; do
+    entries="${entries}  ${key}: '${value}',
+"
+  done
+
+  if [ -z "$entries" ]; then
+    rm -f config.js
+    return
+  fi
+
+  cat > config.js <<EOF
+const CONFIG = {
+${entries}};
+EOF
+}
+
+cmd_config() {
+  if [ "${1:-}" = "--help" ]; then
+    echo "Usage: hug config"
+    echo "       hug config set KEY=VALUE ..."
+    echo "       hug config unset KEY ..."
+    echo ""
+    echo "Manages config.js, a JS constants file pushed with your code."
+    echo "Apps Script code can read values via CONFIG.KEY."
+    echo ""
+    echo "Note: config values are stored in source. Don't put secrets here."
+    return 0
+  fi
+
+  local subcmd="${1:-}"
+
+  case "$subcmd" in
+    "")
+      # List config
+      if [ ! -f config.js ]; then
+        echo "No config.js found. Use 'hug config set KEY=VALUE' to create one."
+        return 0
+      fi
+      _read_config | while IFS='=' read -r key value; do
+        echo "$key=$value"
+      done
+      ;;
+
+    set)
+      shift
+      if [ $# -eq 0 ]; then
+        echo "Usage: hug config set KEY=VALUE ..." >&2
+        return 1
+      fi
+
+      # Load existing config
+      local existing=""
+      if [ -f config.js ]; then
+        existing=$(_read_config)
+      fi
+
+      # Parse new values and merge
+      local new_pairs=""
+      for arg in "$@"; do
+        if ! echo "$arg" | grep -qE '^[A-Za-z_][A-Za-z0-9_]*='; then
+          echo "Error: invalid format '$arg'. Use KEY=VALUE." >&2
+          return 1
+        fi
+        local key="${arg%%=*}"
+        local value="${arg#*=}"
+        # Remove existing entry for this key if present
+        existing=$(echo "$existing" | grep -v "^${key}=" || true)
+        new_pairs="${new_pairs}${key}=${value}
+"
+      done
+
+      # Combine and write
+      { printf '%s\n%s' "$existing" "$new_pairs" | grep -v '^$' || true; } | _write_config
+      echo "Updated config.js."
+      ;;
+
+    unset)
+      shift
+      if [ $# -eq 0 ]; then
+        echo "Usage: hug config unset KEY ..." >&2
+        return 1
+      fi
+
+      if [ ! -f config.js ]; then
+        echo "No config.js found." >&2
+        return 1
+      fi
+
+      local remaining
+      remaining=$(_read_config)
+      for key in "$@"; do
+        remaining=$(echo "$remaining" | grep -v "^${key}=" || true)
+      done
+
+      { echo "$remaining" | grep -v '^$' || true; } | _write_config
+
+      if [ ! -f config.js ]; then
+        echo "Removed config.js (no keys remaining)."
+      else
+        echo "Updated config.js."
+      fi
+      ;;
+
+    *)
+      echo "Error: unknown config subcommand '$subcmd'" >&2
+      echo "Run 'hug config --help' for usage." >&2
+      return 1
+      ;;
+  esac
+}
+
 # ─── passthrough commands ────────────────────────────────────────────────────
 
 cmd_push() {
@@ -312,6 +441,7 @@ shift
 case "$command" in
   init)        cmd_init "$@" ;;
   fork)        cmd_fork "$@" ;;
+  config)      cmd_config "$@" ;;
   deploy)      cmd_deploy "$@" ;;
   push)        cmd_push "$@" ;;
   pull)        cmd_pull "$@" ;;
