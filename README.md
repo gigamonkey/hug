@@ -1,60 +1,102 @@
-# lottery-form
+# hug
 
-Google Apps Script web app — a single-page form for BHS students to rank Learning Communities (LCs) for the lottery.
+A lightweight wrapper around [clasp](https://github.com/google/clasp) for managing Google Apps Script projects.
 
-## Clasp Commands
-
-clasp is installed locally. Put `./node_modules/.bin` in `PATH` or use `npx clasp`:
+## Install
 
 ```bash
-clasp pull      # pull latest from Apps Script
-clasp push      # push local changes to Apps Script
-clasp open      # open project in Apps Script editor
+npm install -g hug-clasp
 ```
 
-There is no build step or test suite — changes are pushed directly to Google Apps Script and tested live.
-
-## Managing Deployments
-
-### Update the test deployment
-
-The test deployment always runs the latest pushed code. Just push:
+Or clone this repo and link it:
 
 ```bash
-clasp push
+git clone <repo-url> && cd hug
+npm install && npm link
 ```
 
-### Update an existing deployment to new code
+## Prerequisites
 
-The `redeploy` script handles pushing, versioning, and updating a deployment in one step:
+You need to be logged in to clasp:
 
 ```bash
-./redeploy "description of changes"
+npx clasp login
 ```
 
-If there are multiple non-HEAD deployments, it prompts you to choose one. The deployment's existing description is preserved.
+## Commands
 
-To roll back to a previous version:
+### Create a new project
 
 ```bash
-./redeploy --rollback <versionNumber>
+hug init my-app                         # blank project
+hug init --template webapp my-app       # webapp with doGet + index.html
 ```
 
-#### Manual equivalent
+This creates the directory, copies template files, installs clasp, and creates the Apps Script project.
+
+### Import an existing project
 
 ```bash
-clasp push
-clasp create-version "description of changes"
-clasp list-versions
-clasp list-deployments
-clasp update-deployment <deploymentId> -V <versionNumber> -d "description"
+cd my-project
+hug import <scriptId>
 ```
 
-### Create a brand new deployment
+Clones an existing Apps Script project into the current directory and sets up npm/clasp.
+
+### Clone (fork) a project
 
 ```bash
-# 1. Push your changes and create a version (steps 1-2 above)
+hug clone <scriptId> my-fork
+```
 
-# 2. Create a new deployment pointing at that version
-clasp create-deployment -V <versionNumber> -d "description"
+Pulls code from an existing project, creates a new Apps Script project, and pushes the code to it.
+
+### Push / Pull / Open
+
+```bash
+hug push          # push local files to Apps Script
+hug pull          # pull remote files from Apps Script
+hug open          # open in the Apps Script editor
+```
+
+### Deploy
+
+```bash
+hug deploy "description of changes"
+```
+
+Pushes code, creates a version, and updates the existing deployment (or creates one if none exists).
+
+### Roll back
+
+```bash
+hug deploy --rollback <versionNumber>
+```
+
+### List versions and deployments
+
+```bash
+hug versions
+hug deployments
+```
+
+## Templates
+
+- **blank** — minimal `appsscript.json` + empty `Code.js`
+- **webapp** — `doGet()` serving an `index.html`, with webapp config in the manifest
+
+## Multi-environment pattern
+
+For dev/prod setups, keep separate clasp configs:
+
+```
+dev.clasp.json
+prod.clasp.json
+```
+
+Copy the one you want to `.clasp.json` before running commands:
+
+```bash
+cp dev.clasp.json .clasp.json
+hug push
 ```

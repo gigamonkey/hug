@@ -1,15 +1,12 @@
 {
-  "name": "lottery-form",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "clasp": "clasp"
+  "name": "hug-clasp",
+  "version": "0.1.0",
+  "description": "A lightweight wrapper around clasp for managing Google Apps Script projects",
+  "bin": {
+    "hug": "bin/hug"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["google-apps-script", "clasp", "gas"],
   "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
     "@google/clasp": "^3.2.0"
   }

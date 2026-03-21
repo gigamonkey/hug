@@ -1,0 +1,306 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+HUG_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$HUG_ROOT/lib/common.sh"
+
+VERSION="0.1.0"
+
+usage() {
+  cat <<EOF
+hug $VERSION — a lightweight wrapper around clasp
+
+Usage: hug <command> [options]
+
+Project commands:
+  init [--template blank|webapp] [name]   Create a new Apps Script project
+  import <scriptId>                       Import an existing Apps Script project
+  clone <scriptId> [directory]            Fork a project into a new script
+
+Development commands:
+  push                Push local files to Apps Script
+  pull                Pull remote files from Apps Script
+  open                Open the project in the Apps Script editor
+
+Deployment commands:
+  deploy [description]          Push, version, and update deployment
+  deploy --rollback <version>   Roll back to a previous version
+  versions                      List versions
+  deployments                   List deployments
+
+Run 'hug <command> --help' for details on a specific command.
+EOF
+}
+
+# ─── init ────────────────────────────────────────────────────────────────────
+
+cmd_init() {
+  local template="blank" name=""
+
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --template) template="$2"; shift 2 ;;
+      --help)
+        echo "Usage: hug init [--template blank|webapp] [name]"
+        echo ""
+        echo "Creates a new Apps Script project. If name is given, creates a directory."
+        echo "Templates: blank (default), webapp"
+        return 0 ;;
+      *) name="$1"; shift ;;
+    esac
+  done
+
+  local template_dir="$HUG_ROOT/templates/$template"
+  if [ ! -d "$template_dir" ]; then
+    echo "Error: unknown template '$template'. Available: blank, webapp" >&2
+    return 1
+  fi
+
+  local project_dir="."
+  if [ -n "$name" ]; then
+    project_dir="$name"
+    mkdir -p "$project_dir"
+  fi
+
+  echo "Copying $template template..."
+  cp -r "$template_dir"/* "$project_dir"/
+
+  cd "$project_dir"
+
+  if [ ! -f package.json ]; then
+    echo "Initializing npm project..."
+    npm init -y --quiet >/dev/null
+  fi
+
+  if [ ! -d node_modules/.bin ] || [ ! -x node_modules/.bin/clasp ]; then
+    echo "Installing clasp..."
+    npm install --save-dev @google/clasp --quiet >/dev/null
+  fi
+
+  local clasp
+  clasp=$(find_clasp)
+
+  local title="${name:-$(basename "$(pwd)")}"
+  local type="standalone"
+  if [ "$template" = "webapp" ]; then
+    type="webapp"
+  fi
+
+  echo "Creating Apps Script project '$title' (type: $type)..."
+  $clasp create --type "$type" --title "$title"
+
+  echo ""
+  echo "Project ready. Next steps:"
+  echo "  hug push        Push code to Apps Script"
+  echo "  hug open        Open in the Apps Script editor"
+  if [ "$template" = "webapp" ]; then
+    echo "  hug deploy      Push, version, and create a deployment"
+  fi
+}
+
+# ─── import ──────────────────────────────────────────────────────────────────
+
+cmd_import() {
+  if [ $# -eq 0 ] || [ "$1" = "--help" ]; then
+    echo "Usage: hug import <scriptId>"
+    echo ""
+    echo "Clones an existing Apps Script project into the current directory."
+    [ "$1" = "--help" ] && return 0 || return 1
+  fi
+
+  local script_id="$1"
+
+  if [ ! -f package.json ]; then
+    echo "Initializing npm project..."
+    npm init -y --quiet >/dev/null
+  fi
+
+  if [ ! -d node_modules/.bin ] || [ ! -x node_modules/.bin/clasp ]; then
+    echo "Installing clasp..."
+    npm install --save-dev @google/clasp --quiet >/dev/null
+  fi
+
+  local clasp
+  clasp=$(find_clasp)
+
+  echo "Cloning project $script_id..."
+  $clasp clone "$script_id"
+
+  echo ""
+  echo "Project imported. Run 'hug pull' to fetch the latest code."
+}
+
+# ─── clone ───────────────────────────────────────────────────────────────────
+
+cmd_clone() {
+  if [ $# -eq 0 ] || [ "$1" = "--help" ]; then
+    echo "Usage: hug clone <scriptId> [directory]"
+    echo ""
+    echo "Pulls code from an existing project, creates a new Apps Script project,"
+    echo "and pushes the code to it. Useful for forking."
+    [ "${1:-}" = "--help" ] && return 0 || return 1
+  fi
+
+  local source_id="$1"
+  local dir="${2:-.}"
+
+  if [ "$dir" != "." ]; then
+    mkdir -p "$dir"
+  fi
+  cd "$dir"
+
+  if [ ! -f package.json ]; then
+    npm init -y --quiet >/dev/null
+  fi
+  if [ ! -d node_modules/.bin ] || [ ! -x node_modules/.bin/clasp ]; then
+    npm install --save-dev @google/clasp --quiet >/dev/null
+  fi
+
+  local clasp
+  clasp=$(find_clasp)
+
+  echo "Pulling code from source project..."
+  $clasp clone "$source_id"
+
+  local title
+  title="$(basename "$(pwd)")"
+
+  echo "Creating new Apps Script project '$title'..."
+  # Remove the cloned .clasp.json so create makes a fresh one
+  rm -f .clasp.json
+  $clasp create --type standalone --title "$title"
+
+  echo "Pushing code to new project..."
+  $clasp push
+
+  echo ""
+  echo "Clone complete. New project created with code from $source_id."
+}
+
+# ─── deploy ──────────────────────────────────────────────────────────────────
+
+cmd_deploy() {
+  if [ $# -gt 0 ] && [ "$1" = "--help" ]; then
+    echo "Usage: hug deploy [description]"
+    echo "       hug deploy --rollback <version>"
+    echo ""
+    echo "Pushes code, creates a version, and updates the deployment."
+    echo "If no deployment exists, creates one."
+    return 0
+  fi
+
+  local clasp
+  clasp=$(find_clasp)
+
+  # Rollback mode
+  if [ "${1:-}" = "--rollback" ]; then
+    if [ $# -ne 2 ]; then
+      echo "Usage: hug deploy --rollback <version>" >&2
+      return 1
+    fi
+    local version="$2"
+    local line
+    line=$(select_deployment "$clasp")
+    if [ -z "$line" ]; then
+      echo "Error: no non-HEAD deployment found to roll back" >&2
+      return 1
+    fi
+    local id desc
+    id=$(deployment_id "$line")
+    desc=$(deployment_desc "$line")
+    echo "Rolling back to version $version (deployment $id)..."
+    update_deployment "$clasp" "$id" "$version" "$desc"
+    echo "Done."
+    return 0
+  fi
+
+  local description="${*:-}"
+
+  echo "Pushing..."
+  $clasp push
+
+  echo "Creating version..."
+  local version_output
+  version_output=$($clasp create-version "$description")
+  echo "$version_output"
+  local version
+  version=$(echo "$version_output" | grep -oE 'version [0-9]+' | grep -oE '[0-9]+')
+
+  if [ -z "$version" ]; then
+    echo "Error: could not parse version number from: $version_output" >&2
+    return 1
+  fi
+
+  local line
+  line=$(select_deployment "$clasp") || true
+
+  if [ -z "$line" ]; then
+    echo "No existing deployment found. Creating one..."
+    $clasp create-deployment -V "$version" -d "$description"
+  else
+    local id desc
+    id=$(deployment_id "$line")
+    desc=$(deployment_desc "$line")
+    echo "Updating deployment $id to version $version..."
+    update_deployment "$clasp" "$id" "$version" "$desc"
+  fi
+
+  echo "Done."
+}
+
+# ─── passthrough commands ────────────────────────────────────────────────────
+
+cmd_push() {
+  local clasp; clasp=$(find_clasp)
+  $clasp push "$@"
+}
+
+cmd_pull() {
+  local clasp; clasp=$(find_clasp)
+  $clasp pull "$@"
+}
+
+cmd_open() {
+  local clasp; clasp=$(find_clasp)
+  $clasp open "$@"
+}
+
+cmd_versions() {
+  local clasp; clasp=$(find_clasp)
+  $clasp list-versions "$@"
+}
+
+cmd_deployments() {
+  local clasp; clasp=$(find_clasp)
+  $clasp list-deployments "$@"
+}
+
+# ─── dispatch ────────────────────────────────────────────────────────────────
+
+if [ $# -eq 0 ]; then
+  usage
+  exit 1
+fi
+
+command="$1"
+shift
+
+case "$command" in
+  init)        cmd_init "$@" ;;
+  import)      cmd_import "$@" ;;
+  clone)       cmd_clone "$@" ;;
+  deploy)      cmd_deploy "$@" ;;
+  push)        cmd_push "$@" ;;
+  pull)        cmd_pull "$@" ;;
+  open)        cmd_open "$@" ;;
+  versions)    cmd_versions "$@" ;;
+  deployments) cmd_deployments "$@" ;;
+  --version|-v) echo "hug $VERSION" ;;
+  --help|-h)   usage ;;
+  *)
+    echo "Error: unknown command '$command'" >&2
+    echo "Run 'hug --help' for usage." >&2
+    exit 1
+    ;;
+esac
