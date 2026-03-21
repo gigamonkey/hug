@@ -26,20 +26,27 @@ clasp push
 
 ### Update an existing deployment to new code
 
-This is equivalent to opening a deployment in "Manage Deployments" and clicking "New version".
+The `redeploy` script handles pushing, versioning, and updating a deployment in one step:
 
 ```bash
-# 1. Push your changes
+./redeploy "description of changes"
+```
+
+If there are multiple non-HEAD deployments, it prompts you to choose one. The deployment's existing description is preserved.
+
+To roll back to a previous version:
+
+```bash
+./redeploy --rollback <versionNumber>
+```
+
+#### Manual equivalent
+
+```bash
 clasp push
-
-# 2. Create an immutable version snapshot
 clasp create-version "description of changes"
-
-# 3. Find the new version number and your deployment ID
 clasp list-versions
 clasp list-deployments
-
-# 4. Point the existing deployment at the new version
 clasp update-deployment <deploymentId> -V <versionNumber> -d "description"
 ```
 
