@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-`hug` is a lightweight bash CLI that wraps [clasp](https://github.com/google/clasp) to provide opinionated project management for Google Apps Script projects. It handles project creation (from templates or by importing existing projects), forking projects for branch-based workflows, and a push→version→deploy workflow.
+`hug` is a bash CLI that wraps [clasp](https://github.com/google/clasp) to provide opinionated project management for Google Apps Script projects. It handles project creation (from templates or by importing existing projects), forking projects for branch-based workflows, and a push→version→deploy workflow.
 
 ## Project structure
 

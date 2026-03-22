@@ -1,6 +1,6 @@
 # hug
 
-A lightweight wrapper around [clasp](https://github.com/google/clasp) for managing Google Apps Script projects.
+A wrapper around [clasp](https://github.com/google/clasp) for managing Google Apps Script projects.
 
 ## Install
 

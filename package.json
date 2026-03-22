@@ -1,7 +1,7 @@
 {
   "name": "@peterseibel/hug",
   "version": "0.1.8",
-  "description": "A lightweight wrapper around clasp for managing Google Apps Script projects",
+  "description": "A wrapper around clasp for managing Google Apps Script projects",
   "bin": {
     "hug": "bin/hug"
   },

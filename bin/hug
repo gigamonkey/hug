@@ -15,7 +15,7 @@ VERSION=$(grep '"version"' "$HUG_ROOT/package.json" | sed 's/.*"version"[[:space
 
 usage() {
   cat <<EOF
-hug $VERSION — a lightweight wrapper around clasp
+hug $VERSION — a wrapper around clasp
 
 Usage: hug <command> [options]
 
