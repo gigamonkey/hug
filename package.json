@@ -1,11 +1,11 @@
 {
   "name": "@peterseibel/hug",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A lightweight wrapper around clasp for managing Google Apps Script projects",
   "bin": {
     "hug": "bin/hug"
   },
-  "keywords": ["google-apps-script", "clasp", "gas"],
+  "keywords": ["google-apps-script", "clasp"],
   "license": "ISC",
   "dependencies": {
     "@google/clasp": "^3.2.0"
