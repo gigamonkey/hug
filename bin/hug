@@ -11,7 +11,7 @@ done
 HUG_ROOT="$(cd "$(dirname "$SOURCE")/.." && pwd)"
 source "$HUG_ROOT/lib/common.sh"
 
-VERSION="0.1.0"
+VERSION=$(grep '"version"' "$HUG_ROOT/package.json" | sed 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
 
 usage() {
   cat <<EOF
