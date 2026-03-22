@@ -421,7 +421,7 @@ cmd_pull() {
 
 cmd_open() {
   local clasp; clasp=$(find_clasp)
-  run_clasp "$clasp" open "$@"
+  run_clasp "$clasp" open-script "$@"
 }
 
 cmd_versions() {
