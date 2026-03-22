@@ -52,7 +52,7 @@ Imports an existing Apps Script project into a new directory and sets up npm/cla
 hug fork
 ```
 
-Creates a new Apps Script project from the current local code. Useful with git branches — fork on a branch to get a separate Apps Script project you can develop against independently.
+Creates a new Apps Script project from the current local code. Useful with git branches — fork on a branch to get a separate Apps Script project you can develop against independently. If you're using `hug config` to manage resources like spreadsheet IDs, you'll probably want to update them after forking so the new project points at its own resources.
 
 ### Configure
 
