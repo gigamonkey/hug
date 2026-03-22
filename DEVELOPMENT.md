@@ -66,8 +66,11 @@ npm version patch   # or minor / major
 git push --follow-tags
 ```
 
-`npm version` bumps `package.json`, commits, and creates a `v*` tag. Pushing
-the tag triggers the workflow in `.github/workflows/publish.yml`.
+`npm version` bumps `package.json`, commits, and creates a `v*` tag. Pushing the
+tag triggers the workflow in `.github/workflows/publish.yml`. (You can also use
+`git config push.followTags true` to configure the repo to always push tags and
+then `npm version patch && git push` will do the trick.)
+
 
 ## Dependencies
 
