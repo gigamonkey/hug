@@ -50,15 +50,14 @@ npm publish --access public
 ### Automated publishing via GitHub Actions
 
 Pushing a version tag triggers a GitHub Actions workflow that publishes to npm
-automatically. Testing.
+automatically using [Trusted Publishing](https://docs.npmjs.com/trusted-publishers/)
+(OIDC — no npm token needed).
 
 **One-time setup:**
 
-1. Generate an npm access token at npmjs.com: Account > Access Tokens >
-   Generate New Token > Automation.
-
-2. Add it as a repo secret on github.com: repo Settings > Secrets and
-   variables > Actions > New repository secret. Name it `NPM_TOKEN`.
+1. On npmjs.com, go to the package settings for `@peterseibel/hug`.
+2. Add a trusted publisher: your GitHub user/repo and workflow filename
+   (`publish.yml`).
 
 **To release:**
 
