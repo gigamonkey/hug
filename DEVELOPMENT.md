@@ -50,7 +50,7 @@ npm publish --access public
 ### Automated publishing via GitHub Actions
 
 Pushing a version tag triggers a GitHub Actions workflow that publishes to npm
-automatically.
+automatically. Testing.
 
 **One-time setup:**
 
