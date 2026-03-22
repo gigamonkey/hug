@@ -47,29 +47,28 @@ Scoped packages are private by default. To publish as public:
 npm publish --access public
 ```
 
-### Subsequent releases
+### Automated publishing via GitHub Actions
 
-1. Bump the version in `package.json` (or use `npm version`):
+Pushing a version tag triggers a GitHub Actions workflow that publishes to npm
+automatically.
 
-   ```bash
-   npm version patch   # 0.1.0 -> 0.1.1
-   npm version minor   # 0.1.1 -> 0.2.0
-   npm version major   # 0.2.0 -> 1.0.0
-   ```
+**One-time setup:**
 
-   `npm version` creates a git commit and tag automatically.
+1. Generate an npm access token at npmjs.com: Account > Access Tokens >
+   Generate New Token > Automation.
 
-2. Publish:
+2. Add it as a repo secret on github.com: repo Settings > Secrets and
+   variables > Actions > New repository secret. Name it `NPM_TOKEN`.
 
-   ```bash
-   npm publish
-   ```
+**To release:**
 
-3. Push the version commit and tag:
+```bash
+npm version patch   # or minor / major
+git push --follow-tags
+```
 
-   ```bash
-   git push && git push --tags
-   ```
+`npm version` bumps `package.json`, commits, and creates a `v*` tag. Pushing
+the tag triggers the workflow in `.github/workflows/publish.yml`.
 
 ## Dependencies
 
