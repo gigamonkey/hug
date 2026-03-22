@@ -116,5 +116,6 @@ git switch -c staging
 hug fork                              # new Apps Script project, updates .clasp.json
 hug config set SPREADSHEET_ID=1Bx..   # point at a staging spreadsheet
 hug deploy                            # deploys to the staging project
+git commit                            # Commit work in branch.
 git switch main                       # .clasp.json and config.js switch back to production
 ```
