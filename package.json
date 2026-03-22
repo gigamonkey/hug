@@ -9,6 +9,10 @@
     "google-apps-script",
     "clasp"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gigamonkey/hug"
+  },
   "license": "ISC",
   "dependencies": {
     "@google/clasp": "^3.2.0"
