@@ -15,6 +15,10 @@ git clone <repo-url> && cd hug
 npm install && npm link
 ```
 
+## Already using clasp?
+
+Just use `hug` in your existing project. There's nothing special about a hug project — any clasp project works out of the box.
+
 ## Prerequisites
 
 You need to be logged in to clasp:
