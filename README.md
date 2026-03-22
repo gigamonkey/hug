@@ -104,12 +104,17 @@ hug deployments
 
 ## Branch-per-environment pattern
 
-Use `hug fork` with git branches to maintain separate Apps Script projects:
+Use `hug fork` and `hug config` combined with git branches to maintain separate
+Apps Script projects. Write code to use config values (e.g. using
+`SPREADSHEET_ID` to a spreadsheet the script should use) rather than using
+container-bound projects and then different branches can use different AppScript
+projects each configured with separate resources as needed. And shared resources
+can be shared by simply using the same config values.
 
 ```bash
-git checkout -b staging
+git switch -c staging
 hug fork                              # new Apps Script project, updates .clasp.json
 hug config set SPREADSHEET_ID=1Bx..   # point at a staging spreadsheet
 hug deploy                            # deploys to the staging project
-git checkout main                     # .clasp.json and config.js switch back to production
+git switch main                       # .clasp.json and config.js switch back to production
 ```
