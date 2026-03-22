@@ -46,6 +46,15 @@ them suitable for variant UIs against the same data, but not for dev/prod
 separation. For dev/prod, use `hug fork` + git branches instead — each branch
 gets its own script project with independent properties and deployments.
 
+### Container-bound vs standalone scripts
+
+Container-bound scripts are created from within a Google Doc/Sheet/Form via
+Extensions > Apps Script. They can call `getActiveSpreadsheet()` etc. but are
+tied to that container. There's no way to convert them to standalone. `hug fork`
+detects container-bound projects (via `parentId` in `.clasp.json`) and refuses
+unless `--force` is used, since the forked standalone copy would lose access to
+the container's APIs.
+
 ### Config
 
 `hug config` manages a local `config.js` file (JS constants object) that gets
