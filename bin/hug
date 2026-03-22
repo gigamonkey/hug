@@ -27,7 +27,7 @@ Project commands:
 Development commands:
   push                Push local files to Apps Script
   pull [-f|--force]   Pull remote files (refuses if uncommitted changes)
-  open                Open the project in the Apps Script editor
+  open [--container]  Open the project script (or container)
 
 Configuration:
   config                        List config values
@@ -421,7 +421,16 @@ cmd_pull() {
 
 cmd_open() {
   local clasp; clasp=$(find_clasp)
-  run_clasp "$clasp" open-script "$@"
+  if [[ "${1:-}" == "--container" ]]; then
+    shift
+    if ! grep -q '"parentId"' .clasp.json 2>/dev/null; then
+      echo "Error: this project is not container-bound (no parentId in .clasp.json)" >&2
+      exit 1
+    fi
+    run_clasp "$clasp" open-container "$@"
+  else
+    run_clasp "$clasp" open-script "$@"
+  fi
 }
 
 cmd_versions() {
