@@ -11,7 +11,7 @@ npm install -g @peterseibel/hug
 Or clone this repo and link it:
 
 ```bash
-git clone <repo-url> && cd hug
+git clone https://github.com/gigamonkey/hug.git && cd hug
 npm install && npm link
 ```
 
