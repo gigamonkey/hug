@@ -43,6 +43,41 @@ run_clasp() {
   return $exit_code
 }
 
+# If the project is container-bound, patch parentId into .clasp.json
+patch_parent_id() {
+  local script_id
+  script_id=$(grep '"scriptId"' .clasp.json | sed 's/.*"scriptId"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+  if [ -z "$script_id" ]; then
+    return
+  fi
+
+  local token
+  token=$(sed -n 's/.*"access_token"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' ~/.clasprc.json 2>/dev/null)
+  if [ -z "$token" ]; then
+    return
+  fi
+
+  local response
+  response=$(curl -sf -H "Authorization: Bearer $token" \
+    "https://script.googleapis.com/v1/projects/$script_id" 2>/dev/null) || return 0
+
+  local parent_id
+  parent_id=$(echo "$response" | sed -n 's/.*"parentId"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+  if [ -z "$parent_id" ]; then
+    return
+  fi
+
+  # Already has parentId
+  if grep -q '"parentId"' .clasp.json 2>/dev/null; then
+    return
+  fi
+
+  # Inject parentId into .clasp.json before the closing brace
+  local tmp
+  tmp=$(mktemp)
+  sed '$s/}$/,"parentId":"'"$parent_id"'"}/' .clasp.json > "$tmp" && mv "$tmp" .clasp.json
+}
+
 # Resolve the hug package root (where templates/ lives)
 hug_root() {
   local source="${BASH_SOURCE[0]}"

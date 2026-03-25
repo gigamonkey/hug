@@ -22,7 +22,7 @@ Usage: hug <command> [options]
 Project commands:
   init [--template blank|webapp] [name]   Create a new project from a template
   init --scriptId <id> [name]             Import an existing Apps Script project
-  fork                                    Create a new Apps Script project from current code
+  fork [--detach]                          Create a new Apps Script project from current code
 
 Development commands:
   push                Push local files to Apps Script
@@ -98,6 +98,7 @@ cmd_init() {
     # Import mode: clone an existing project
     echo "Importing project $script_id..."
     run_clasp "$clasp" clone "$script_id"
+    patch_parent_id
 
     echo ""
     echo "Project imported. Next steps:"
@@ -139,16 +140,23 @@ cmd_init() {
 
 cmd_fork() {
   local force=false
+  local detach=false
   while [ $# -gt 0 ]; do
     case "$1" in
       -f|--force) force=true; shift ;;
+      --detach) detach=true; shift ;;
       --help)
-        echo "Usage: hug fork [-f|--force]"
+        echo "Usage: hug fork [-f|--force] [--detach]"
         echo ""
         echo "Creates a new Apps Script project from the current local code."
         echo "Replaces .clasp.json with a new project, then pushes code to it."
         echo ""
-        echo "Refuses if the current project is container-bound (use -f to override)."
+        echo "Refuses if the current project is container-bound (use -f to override,"
+        echo "or --detach to fork and save the container ID to config)."
+        echo ""
+        echo "  --detach   Fork a container-bound project and set CONTAINER_ID in"
+        echo "             config.js to the original container's ID, so code can"
+        echo "             open it via SpreadsheetApp.openById() etc."
         echo ""
         echo "Useful with git branches: fork on a branch to get a separate"
         echo "Apps Script project for each branch."
@@ -162,16 +170,21 @@ cmd_fork() {
     return 1
   fi
 
-  if [ "$force" = false ] && grep -q '"parentId"' .clasp.json 2>/dev/null; then
-    local parent_id
+  # Capture parentId before we replace .clasp.json
+  local parent_id=""
+  if grep -q '"parentId"' .clasp.json 2>/dev/null; then
     parent_id=$(grep '"parentId"' .clasp.json | sed 's/.*"parentId"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+  fi
+
+  if [ -n "$parent_id" ] && [ "$force" = false ] && [ "$detach" = false ]; then
     echo "Error: this is a container-bound script. Forking will create a standalone" >&2
     echo "project, but the code may depend on its container (e.g. by calling." >&2
     echo "getActiveSpreadsheet())." >&2
     echo "" >&2
     echo "Container: https://drive.google.com/file/d/$parent_id" >&2
     echo "" >&2
-    echo "Use 'hug fork --force' to fork anyway." >&2
+    echo "Use 'hug fork --force' to fork anyway, or '--detach' to fork and" >&2
+    echo "save the container ID to config.js as CONTAINER_ID." >&2
     return 1
   fi
 
@@ -187,6 +200,18 @@ cmd_fork() {
 
   echo "Pushing code to new project..."
   run_clasp "$clasp" push
+
+  # If detaching, save the original container ID to config
+  if [ "$detach" = true ] && [ -n "$parent_id" ]; then
+    local existing=""
+    if [ -f config.js ]; then
+      existing=$(_read_config)
+    fi
+    existing=$(echo "$existing" | grep -v "^CONTAINER_ID=" || true)
+    { printf '%s\nCONTAINER_ID=%s\n' "$existing" "$parent_id" | grep -v '^$' || true; } | _write_config
+    echo "Set CONTAINER_ID=$parent_id in config.js."
+    echo "Push will include config.js. Use SpreadsheetApp.openById(CONFIG.CONTAINER_ID) etc."
+  fi
 
   echo ""
   echo "Fork complete. This directory now points to a new Apps Script project."
