@@ -1,6 +1,6 @@
 {
   "name": "@peterseibel/hug",
-  "version": "0.1.11",
+  "version": "0.2.0",
   "description": "A wrapper around clasp for managing Google Apps Script projects",
   "bin": {
     "hug": "dist/cli.js"
