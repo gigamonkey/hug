@@ -17,11 +17,6 @@ export const cmdConfigList = (): void => {
 };
 
 export const cmdConfigSet = (pairs: string[]): void => {
-  if (pairs.length === 0) {
-    process.stderr.write("Usage: hug config set KEY=VALUE ...\n");
-    process.exit(1);
-  }
-
   const existing: ConfigEntries = readConfig() || {};
 
   for (const arg of pairs) {
@@ -42,11 +37,6 @@ export const cmdConfigSet = (pairs: string[]): void => {
 };
 
 export const cmdConfigUnset = (keys: string[]): void => {
-  if (keys.length === 0) {
-    process.stderr.write("Usage: hug config unset KEY ...\n");
-    process.exit(1);
-  }
-
   if (!existsSync("config.js")) {
     process.stderr.write("No config.js found.\n");
     process.exit(1);
