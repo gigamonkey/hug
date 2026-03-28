@@ -196,10 +196,18 @@ cmd_fork() {
 
   echo "Creating new Apps Script project '$title'..."
   rm -f .clasp.json
+  # Preserve appsscript.json because clasp create overwrites it with server defaults
+  local saved_manifest=""
+  if [ -f appsscript.json ]; then
+    saved_manifest=$(cat appsscript.json)
+  fi
   run_clasp "$clasp" create --type standalone --title "$title"
+  if [ -n "$saved_manifest" ]; then
+    echo "$saved_manifest" > appsscript.json
+  fi
 
   echo "Pushing code to new project..."
-  run_clasp "$clasp" push
+  run_clasp "$clasp" push --force
 
   # If detaching, save the original container ID to config
   if [ "$detach" = true ] && [ -n "$parent_id" ]; then

@@ -54,6 +54,47 @@ hug fork
 
 Creates a new Apps Script project from the current local code. Useful with git branches — fork on a branch to get a separate Apps Script project you can develop against independently. If you're using `hug config` to manage resources like spreadsheet IDs, you'll probably want to update them after forking so the new project points at its own resources.
 
+#### Forking a container-bound project
+
+If your project is a container-bound script (created via Extensions > Apps Script inside a Google Sheet, Doc, etc.), `hug fork` will refuse by default since the forked standalone copy can't call `getActiveSpreadsheet()` and similar container APIs.
+
+Use `--detach` to fork anyway and automatically save the original container's ID to `config.js`:
+
+```bash
+hug fork --detach
+```
+
+This sets `CONTAINER_ID` in `config.js` to the original container's ID. You'll then need to update your code to open the container explicitly instead of relying on the bound context. For example:
+
+```javascript
+// Before (container-bound only)
+const ss = SpreadsheetApp.getActiveSpreadsheet();
+const sheet = SpreadsheetApp.getActiveSheet();
+const range = SpreadsheetApp.getActiveRange();
+
+// After (works in standalone fork)
+const ss = SpreadsheetApp.openById(CONFIG.CONTAINER_ID);
+const sheet = ss.getActiveSheet();         // or ss.getSheetByName("Sheet1")
+const range = sheet.getActiveRange();      // or sheet.getRange(...)
+```
+
+Similarly for other container types:
+
+```javascript
+// Google Doc
+const doc = DocumentApp.openById(CONFIG.CONTAINER_ID);
+
+// Google Form
+const form = FormApp.openById(CONFIG.CONTAINER_ID);
+```
+
+After updating the code, push it and optionally set up a fresh deployment:
+
+```bash
+hug push
+hug deploy "detach from container"
+```
+
 ### Configure
 
 ```bash
