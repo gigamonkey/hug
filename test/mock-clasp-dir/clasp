@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# Mock clasp for testing hug CLI.
+# Records invocations to $MOCK_CLASP_LOG and returns configurable responses.
+
+set -euo pipefail
+
+LOG="${MOCK_CLASP_LOG:-/tmp/clasp.log}"
+echo "$@" >> "$LOG"
+
+# Allow a fixture directory to provide per-command responses
+FIXTURE_DIR="${MOCK_CLASP_FIXTURE_DIR:-}"
+
+# If there's a fixture script for this command, run it
+if [ -n "$FIXTURE_DIR" ] && [ -f "$FIXTURE_DIR/$1" ]; then
+  exec bash "$FIXTURE_DIR/$1" "$@"
+fi
+
+# Default behaviours
+case "${1:-}" in
+  create)
+    # Create .clasp.json as clasp would
+    echo '{"scriptId":"mock-script-id","rootDir":"'$(pwd)'"}' > .clasp.json
+    # Overwrite appsscript.json as clasp does
+    echo '{"timeZone":"America/New_York","runtimeVersion":"V8"}' > appsscript.json
+    echo "Created new script: https://script.google.com/d/mock-script-id/edit"
+    ;;
+  clone)
+    SCRIPT_ID="${2:-unknown}"
+    echo "{\"scriptId\":\"$SCRIPT_ID\",\"rootDir\":\"$(pwd)\"}" > .clasp.json
+    echo '{"timeZone":"America/New_York","runtimeVersion":"V8"}' > appsscript.json
+    echo "Cloned $SCRIPT_ID"
+    ;;
+  push)
+    echo "Pushed 3 files."
+    ;;
+  pull)
+    echo "Pulled 3 files."
+    ;;
+  open-script)
+    echo "Opening script..."
+    ;;
+  open-container)
+    echo "Opening container..."
+    ;;
+  list-versions)
+    echo "~ Version 1 - initial"
+    echo "~ Version 2 - update"
+    ;;
+  list-deployments)
+    echo "2 Deployments."
+    echo "- AKfycbxHEAD @HEAD"
+    echo "- AKfycbxDEPLOY1 @2 - my deployment"
+    ;;
+  create-version)
+    echo "Created version 3."
+    ;;
+  create-deployment)
+    echo "Created deployment AKfycbxNEW @3."
+    ;;
+  update-deployment)
+    echo "Updated deployment ${2:-} to version ${4:-}."
+    ;;
+  *)
+    echo "Unknown clasp command: $*" >&2
+    exit 1
+    ;;
+esac
+
+# Exit with configurable exit code
+exit "${MOCK_CLASP_EXIT:-0}"
