@@ -10,12 +10,6 @@ interface InitOpts {
 }
 
 export const cmdInit = (name: string | undefined, opts: InitOpts): void => {
-  // Validate flags
-  if (opts.scriptId && opts.template) {
-    process.stderr.write("Error: --scriptId and --template are mutually exclusive\n");
-    process.exit(1);
-  }
-
   let projectDir = ".";
   if (name) {
     projectDir = name;

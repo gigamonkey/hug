@@ -127,7 +127,7 @@ describe("hug init", () => {
       "webapp",
     ]);
     assert.equal(r.exitCode, 1);
-    assert.match(r.stderr, /mutually exclusive/);
+    assert.match(r.stderr, /cannot be used with/);
   });
 
   it("errors on unknown template", () => {

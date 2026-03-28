@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { Command } from "commander";
+import { Command, Option } from "commander";
 
 import { cmdInit } from "./commands/init.js";
 import { cmdFork } from "./commands/fork.js";
@@ -31,8 +31,8 @@ const program = new Command()
 program
   .command("init")
   .description("Create a new Apps Script project")
-  .option("--template <name>", "start from a template: blank (default), webapp")
-  .option("--scriptId <id>", "import an existing Apps Script project by ID")
+  .addOption(new Option("--template <name>", "start from a template: blank (default), webapp").conflicts("scriptId"))
+  .addOption(new Option("--scriptId <id>", "import an existing Apps Script project by ID").conflicts("template"))
   .option("-f, --force", "use an existing directory even if it already exists")
   .argument("[name]", "project directory name")
   .action(cmdInit);
