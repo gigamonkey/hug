@@ -8,7 +8,7 @@
   "scripts": {
     "build": "tsc",
     "prepare": "tsc",
-    "test": "tsc -p tsconfig.test.json && node --test dist-test/test/cli.test.js"
+    "test": "tsc && tsc -p tsconfig.test.json && node --test dist-test/test/cli.test.js"
   },
   "keywords": [
     "google-apps-script",

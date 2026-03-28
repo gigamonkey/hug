@@ -370,6 +370,13 @@ describe("hug open", () => {
     assert.ok(log.some((l) => l === "open-container"));
   });
 
+  it("--container errors if no .clasp.json", () => {
+    const dir = makeTmpDir();
+    const r = runHug(dir, ["open", "--container"]);
+    assert.equal(r.exitCode, 1);
+    assert.match(r.stderr, /no .clasp.json/);
+  });
+
   it("--container errors if not container-bound", () => {
     const dir = makeTmpDir();
     writeFile(dir, ".clasp.json", JSON.stringify({ scriptId: "s1" }));

@@ -10,7 +10,7 @@ export const cmdOpen = (
   if (opts.container) {
     if (!existsSync(".clasp.json")) {
       process.stderr.write(
-        "Error: this project is not container-bound (no parentId in .clasp.json)\n"
+        "Error: no .clasp.json found. Run 'hug init' first.\n"
       );
       process.exit(1);
     }
