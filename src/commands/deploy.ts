@@ -6,27 +6,19 @@ import {
   updateDeployment,
 } from "../deployment.js";
 
-export const cmdDeploy = async (args: string[]): Promise<void> => {
-  if (args[0] === "--help") {
-    console.log("Usage: hug deploy [description]");
-    console.log("       hug deploy --rollback <version>");
-    console.log("");
-    console.log(
-      "Pushes code, creates a version, and updates the deployment."
-    );
-    console.log("If no deployment exists, creates one.");
-    return;
-  }
+interface DeployOpts {
+  rollback?: string;
+}
 
+export const cmdDeploy = async (
+  descriptionParts: string[],
+  opts: DeployOpts
+): Promise<void> => {
   const clasp = findClasp();
 
   // Rollback mode
-  if (args[0] === "--rollback") {
-    if (args.length !== 2) {
-      process.stderr.write("Usage: hug deploy --rollback <version>\n");
-      process.exit(1);
-    }
-    const version = args[1];
+  if (opts.rollback) {
+    const version = opts.rollback;
     const line = await selectDeployment(clasp);
     if (!line) {
       process.stderr.write(
@@ -42,7 +34,7 @@ export const cmdDeploy = async (args: string[]): Promise<void> => {
     return;
   }
 
-  const description = args.join(" ");
+  const description = descriptionParts.join(" ");
 
   console.log("Pushing...");
   let output = runClasp(clasp, ["push"]);
@@ -86,4 +78,4 @@ export const cmdDeploy = async (args: string[]): Promise<void> => {
   }
 
   console.log("Done.");
-}
+};

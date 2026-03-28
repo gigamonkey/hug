@@ -3,44 +3,15 @@ import { basename, resolve } from "node:path";
 import { ensureClasp, findClasp, runClasp, patchParentId } from "../clasp.js";
 import { copyTemplate } from "../templates.js";
 
-export const cmdInit = (args: string[]): void => {
-  let template = "";
-  let name = "";
-  let scriptId = "";
-  let force = false;
+interface InitOpts {
+  template?: string;
+  scriptId?: string;
+  force?: boolean;
+}
 
-  for (let i = 0; i < args.length; i++) {
-    switch (args[i]) {
-      case "--template":
-        template = args[++i];
-        break;
-      case "--scriptId":
-        scriptId = args[++i];
-        break;
-      case "-f":
-      case "--force":
-        force = true;
-        break;
-      case "--help":
-        console.log("Usage: hug init [--template blank|webapp] [-f|--force] [name]");
-        console.log("       hug init --scriptId <id> [-f|--force] [name]");
-        console.log("");
-        console.log("Creates a new Apps Script project. If name is given, creates a directory.");
-        console.log("Refuses if the directory already exists (use -f to override).");
-        console.log("");
-        console.log("Options:");
-        console.log("  --template   Start from a template: blank (default), webapp");
-        console.log("  --scriptId   Import an existing Apps Script project by ID");
-        console.log("  -f, --force  Use an existing directory even if it already exists");
-        return;
-      default:
-        name = args[i];
-        break;
-    }
-  }
-
+export const cmdInit = (name: string | undefined, opts: InitOpts): void => {
   // Validate flags
-  if (scriptId && template) {
+  if (opts.scriptId && opts.template) {
     process.stderr.write("Error: --scriptId and --template are mutually exclusive\n");
     process.exit(1);
   }
@@ -48,14 +19,14 @@ export const cmdInit = (args: string[]): void => {
   let projectDir = ".";
   if (name) {
     projectDir = name;
-    if (existsSync(projectDir) && !force) {
+    if (existsSync(projectDir) && !opts.force) {
       process.stderr.write(
         `Error: directory '${projectDir}' already exists. Use -f to override.\n`
       );
       process.exit(1);
     }
     mkdirSync(projectDir, { recursive: true });
-  } else if (existsSync(".clasp.json") && !force) {
+  } else if (existsSync(".clasp.json") && !opts.force) {
     process.stderr.write(
       "Error: .clasp.json already exists in this directory. Use -f to override.\n"
     );
@@ -66,10 +37,10 @@ export const cmdInit = (args: string[]): void => {
   ensureClasp();
   const clasp = findClasp();
 
-  if (scriptId) {
+  if (opts.scriptId) {
     // Import mode: clone an existing project
-    console.log(`Importing project ${scriptId}...`);
-    const output = runClasp(clasp, ["clone", scriptId]);
+    console.log(`Importing project ${opts.scriptId}...`);
+    const output = runClasp(clasp, ["clone", opts.scriptId]);
     process.stdout.write(output);
     patchParentId();
 
@@ -79,7 +50,7 @@ export const cmdInit = (args: string[]): void => {
     console.log("  hug open        Open in the Apps Script editor");
   } else {
     // Template mode: create a new project
-    const tmpl = template || "blank";
+    const tmpl = opts.template || "blank";
 
     if (!copyTemplate(tmpl, ".")) {
       process.stderr.write(
@@ -105,4 +76,4 @@ export const cmdInit = (args: string[]): void => {
       console.log("  hug deploy      Push, version, and create a deployment");
     }
   }
-}
+};

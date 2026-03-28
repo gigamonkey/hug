@@ -8,54 +8,12 @@ import { basename, resolve } from "node:path";
 import { findClasp, runClasp } from "../clasp.js";
 import { readConfig, writeConfig, type ConfigEntries } from "../config-file.js";
 
-export const cmdFork = (args: string[]): void => {
-  let force = false;
-  let detach = false;
+interface ForkOpts {
+  force?: boolean;
+  detach?: boolean;
+}
 
-  for (const arg of args) {
-    switch (arg) {
-      case "-f":
-      case "--force":
-        force = true;
-        break;
-      case "--detach":
-        detach = true;
-        break;
-      case "--help":
-        console.log("Usage: hug fork [-f|--force] [--detach]");
-        console.log("");
-        console.log(
-          "Creates a new Apps Script project from the current local code."
-        );
-        console.log(
-          "Replaces .clasp.json with a new project, then pushes code to it."
-        );
-        console.log("");
-        console.log(
-          "Refuses if the current project is container-bound (use -f to override,"
-        );
-        console.log(
-          "or --detach to fork and save the container ID to config)."
-        );
-        console.log("");
-        console.log(
-          "  --detach   Fork a container-bound project and set CONTAINER_ID in"
-        );
-        console.log(
-          "             config.js to the original container's ID, so code can"
-        );
-        console.log(
-          "             open it via SpreadsheetApp.openById() etc."
-        );
-        console.log("");
-        console.log(
-          "Useful with git branches: fork on a branch to get a separate"
-        );
-        console.log("Apps Script project for each branch.");
-        return;
-    }
-  }
-
+export const cmdFork = (opts: ForkOpts): void => {
   if (!existsSync(".clasp.json")) {
     process.stderr.write(
       "Error: no .clasp.json found. Run 'hug init' first.\n"
@@ -67,7 +25,7 @@ export const cmdFork = (args: string[]): void => {
   const claspJson = JSON.parse(readFileSync(".clasp.json", "utf-8"));
   const parentId: string | undefined = claspJson.parentId;
 
-  if (parentId && !force && !detach) {
+  if (parentId && !opts.force && !opts.detach) {
     process.stderr.write(
       "Error: this is a container-bound script. Forking will create a standalone\n"
     );
@@ -117,7 +75,7 @@ export const cmdFork = (args: string[]): void => {
   process.stdout.write(output);
 
   // If detaching, save the original container ID to config
-  if (detach && parentId) {
+  if (opts.detach && parentId) {
     const existing: ConfigEntries = readConfig() || {};
     existing["CONTAINER_ID"] = parentId;
     writeConfig(existing);
@@ -131,4 +89,4 @@ export const cmdFork = (args: string[]): void => {
   console.log(
     "Fork complete. This directory now points to a new Apps Script project."
   );
-}
+};

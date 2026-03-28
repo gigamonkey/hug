@@ -1,11 +1,13 @@
 import { existsSync, readFileSync } from "node:fs";
 import { findClasp, runClasp } from "../clasp.js";
 
-export const cmdOpen = (args: string[]): void => {
+export const cmdOpen = (
+  args: string[],
+  opts: { container?: boolean }
+): void => {
   const clasp = findClasp();
 
-  if (args[0] === "--container") {
-    const rest = args.slice(1);
+  if (opts.container) {
     if (!existsSync(".clasp.json")) {
       process.stderr.write(
         "Error: this project is not container-bound (no parentId in .clasp.json)\n"
@@ -19,10 +21,10 @@ export const cmdOpen = (args: string[]): void => {
       );
       process.exit(1);
     }
-    const output = runClasp(clasp, ["open-container", ...rest]);
+    const output = runClasp(clasp, ["open-container", ...args]);
     process.stdout.write(output);
   } else {
     const output = runClasp(clasp, ["open-script", ...args]);
     process.stdout.write(output);
   }
-}
+};

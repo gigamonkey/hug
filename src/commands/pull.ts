@@ -1,29 +1,11 @@
 import { execFileSync } from "node:child_process";
 import { findClasp, runClasp } from "../clasp.js";
 
-export const cmdPull = (args: string[]): void => {
-  let force = false;
-  const rest: string[] = [];
-
-  for (const arg of args) {
-    if (arg === "-f" || arg === "--force") {
-      force = true;
-    } else if (arg === "--help") {
-      console.log("Usage: hug pull [-f|--force]");
-      console.log("");
-      console.log(
-        "Pulls remote files from Apps Script, overwriting local files."
-      );
-      console.log(
-        "Refuses to run if there are uncommitted changes (use -f to override)."
-      );
-      return;
-    } else {
-      rest.push(arg);
-    }
-  }
-
-  if (!force) {
+export const cmdPull = (
+  args: string[],
+  opts: { force?: boolean }
+): void => {
+  if (!opts.force) {
     try {
       execFileSync("git", ["diff", "--quiet"], { stdio: "ignore" });
     } catch {
@@ -36,6 +18,6 @@ export const cmdPull = (args: string[]): void => {
   }
 
   const clasp = findClasp();
-  const output = runClasp(clasp, ["pull", ...rest]);
+  const output = runClasp(clasp, ["pull", ...args]);
   process.stdout.write(output);
-}
+};

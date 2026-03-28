@@ -3,11 +3,12 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { Command } from "commander";
 
 import { cmdInit } from "./commands/init.js";
 import { cmdFork } from "./commands/fork.js";
 import { cmdDeploy } from "./commands/deploy.js";
-import { cmdConfig } from "./commands/config.js";
+import { cmdConfigList, cmdConfigSet, cmdConfigUnset } from "./commands/config.js";
 import { cmdPush } from "./commands/push.js";
 import { cmdPull } from "./commands/pull.js";
 import { cmdOpen } from "./commands/open.js";
@@ -19,85 +20,101 @@ const hugRoot = dirname(dirname(thisFile));
 const pkg = JSON.parse(
   readFileSync(join(hugRoot, "package.json"), "utf-8")
 );
-const VERSION = pkg.version;
 
-const usage = (): void => {
-  console.log(`hug ${VERSION} — a wrapper around clasp
+const program = new Command()
+  .name("hug")
+  .description("A wrapper around clasp for managing Google Apps Script projects")
+  .version(pkg.version, "-v, --version");
 
-Usage: hug <command> [options]
+// ─── init ────────────────────────────────────────────────────────────────────
 
-Project commands:
-  init [--template blank|webapp] [name]   Create a new project from a template
-  init --scriptId <id> [name]             Import an existing Apps Script project
-  fork [--detach]                          Create a new Apps Script project from current code
+program
+  .command("init")
+  .description("Create a new Apps Script project")
+  .option("--template <name>", "start from a template: blank (default), webapp")
+  .option("--scriptId <id>", "import an existing Apps Script project by ID")
+  .option("-f, --force", "use an existing directory even if it already exists")
+  .argument("[name]", "project directory name")
+  .action(cmdInit);
 
-Development commands:
-  push                Push local files to Apps Script
-  pull [-f|--force]   Pull remote files (refuses if uncommitted changes)
-  open [--container]  Open the project script (or container)
+// ─── fork ────────────────────────────────────────────────────────────────────
 
-Configuration:
-  config                        List config values
-  config set KEY=VALUE ...      Set config values (writes config.js)
-  config unset KEY ...          Remove config values
+program
+  .command("fork")
+  .description("Create a new Apps Script project from current code")
+  .option("-f, --force", "fork even if container-bound")
+  .option("--detach", "fork and save container ID to config.js")
+  .action(cmdFork);
 
-Deployment commands:
-  deploy [description]          Push, version, and update deployment
-  deploy --rollback <version>   Roll back to a previous version
-  versions                      List versions
-  deployments                   List deployments
+// ─── config ──────────────────────────────────────────────────────────────────
 
-Run 'hug <command> --help' for details on a specific command.`);
-}
+const config = program
+  .command("config")
+  .description("Manage config.js (KEY=VALUE constants pushed with your code)")
+  .action(cmdConfigList);
 
-const args = process.argv.slice(2);
+config
+  .command("set")
+  .description("Set config values")
+  .argument("<pairs...>", "KEY=VALUE pairs")
+  .action(cmdConfigSet);
 
-if (args.length === 0) {
-  usage();
-  process.exit(1);
-}
+config
+  .command("unset")
+  .description("Remove config values")
+  .argument("<keys...>", "keys to remove")
+  .action(cmdConfigUnset);
 
-const command = args[0];
-const rest = args.slice(1);
+// ─── deploy ──────────────────────────────────────────────────────────────────
 
-switch (command) {
-  case "init":
-    cmdInit(rest);
-    break;
-  case "fork":
-    cmdFork(rest);
-    break;
-  case "config":
-    cmdConfig(rest);
-    break;
-  case "deploy":
-    await cmdDeploy(rest);
-    break;
-  case "push":
-    cmdPush(rest);
-    break;
-  case "pull":
-    cmdPull(rest);
-    break;
-  case "open":
-    cmdOpen(rest);
-    break;
-  case "versions":
-    cmdVersions(rest);
-    break;
-  case "deployments":
-    cmdDeployments(rest);
-    break;
-  case "--version":
-  case "-v":
-    console.log(`hug ${VERSION}`);
-    break;
-  case "--help":
-  case "-h":
-    usage();
-    break;
-  default:
-    process.stderr.write(`Error: unknown command '${command}'\n`);
-    process.stderr.write("Run 'hug --help' for usage.\n");
-    process.exit(1);
-}
+program
+  .command("deploy")
+  .description("Push, version, and update deployment")
+  .option("--rollback <version>", "roll back to a previous version")
+  .argument("[description...]", "deployment description")
+  .action(cmdDeploy);
+
+// ─── push / pull / open ──────────────────────────────────────────────────────
+
+program
+  .command("push")
+  .description("Push local files to Apps Script")
+  .allowUnknownOption()
+  .argument("[args...]", "arguments forwarded to clasp")
+  .action(cmdPush);
+
+program
+  .command("pull")
+  .description("Pull remote files (refuses if uncommitted changes)")
+  .option("-f, --force", "bypass uncommitted changes check")
+  .allowUnknownOption()
+  .argument("[args...]", "arguments forwarded to clasp")
+  .action(cmdPull);
+
+program
+  .command("open")
+  .description("Open the project script (or container)")
+  .option("--container", "open the container document instead")
+  .allowUnknownOption()
+  .argument("[args...]", "arguments forwarded to clasp")
+  .action(cmdOpen);
+
+// ─── versions / deployments ──────────────────────────────────────────────────
+
+program
+  .command("versions")
+  .description("List versions")
+  .allowUnknownOption()
+  .argument("[args...]", "arguments forwarded to clasp")
+  .action(cmdVersions);
+
+program
+  .command("deployments")
+  .description("List deployments")
+  .allowUnknownOption()
+  .argument("[args...]", "arguments forwarded to clasp")
+  .action(cmdDeployments);
+
+// ─── parse ───────────────────────────────────────────────────────────────────
+
+await program.parseAsync();
