@@ -3,7 +3,12 @@
   "version": "0.1.11",
   "description": "A wrapper around clasp for managing Google Apps Script projects",
   "bin": {
-    "hug": "bin/hug"
+    "hug": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepare": "tsc",
+    "test": "tsc && tsc -p tsconfig.test.json && node --test dist-test/test/cli.test.js"
   },
   "keywords": [
     "google-apps-script",
@@ -13,8 +18,14 @@
     "type": "git",
     "url": "https://github.com/gigamonkey/hug"
   },
+  "type": "module",
   "license": "ISC",
   "dependencies": {
-    "@google/clasp": "^3.2.0"
+    "@google/clasp": "^3.2.0",
+    "commander": "^14.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
   }
 }
