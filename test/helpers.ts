@@ -20,7 +20,7 @@ export const findProjectRoot = (start: string): string => {
 }
 
 const projectRoot = findProjectRoot(testDir);
-const mockClaspDir = resolve(projectRoot, "test", "mock-clasp-dir");
+const mockClasp = resolve(projectRoot, "test", "mock-clasp-dir", "clasp");
 const hugCli = resolve(projectRoot, "dist", "cli.js");
 
 export interface RunResult {
@@ -47,7 +47,7 @@ export const runHug = (
   const logFile = join(cwd, "clasp.log");
   const mergedEnv: Record<string, string> = {
     ...process.env as Record<string, string>,
-    PATH: `${mockClaspDir}:${process.env.PATH}`,
+    HUG_CLASP: mockClasp,
     MOCK_CLASP_LOG: logFile,
     ...env,
   };

@@ -1,7 +1,7 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, symlinkSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { existsSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
 import {
   makeTmpDir,
   runHug,
@@ -9,15 +9,7 @@ import {
   writeFile,
   readFile,
   initGit,
-  findProjectRoot,
 } from "./helpers.js";
-
-import { fileURLToPath } from "node:url";
-import { dirname } from "node:path";
-
-const thisDir = dirname(fileURLToPath(import.meta.url));
-const projectRoot = findProjectRoot(thisDir);
-const mockClaspPath = resolve(projectRoot, "test", "mock-clasp-dir", "clasp");
 
 // ─── version / help ──────────────────────────────────────────────────────────
 
@@ -100,21 +92,10 @@ describe("hug init", () => {
 
   it("--scriptId runs clasp clone", () => {
     const dir = makeTmpDir();
-    // Pre-create package.json and a fake node_modules/.bin/clasp
-    // so ensureClasp() doesn't try to install the real clasp
-    const projDir = join(dir, "myproject");
-    mkdirSync(projDir, { recursive: true });
-    writeFile(projDir, "package.json", '{"name":"test"}');
-    mkdirSync(join(projDir, "node_modules", ".bin"), { recursive: true });
-    symlinkSync(mockClaspPath, join(projDir, "node_modules", ".bin", "clasp"));
-    const r = runHug(dir, ["init", "--scriptId", "abc123", "-f", "myproject"]);
-    assert.equal(r.exitCode, 0, `stderr: ${r.stderr}, stdout: ${r.stdout}`);
-    // MOCK_CLASP_LOG is set to dir/clasp.log (the cwd passed to runHug)
+    const r = runHug(dir, ["init", "--scriptId", "abc123", "myproject"]);
+    assert.equal(r.exitCode, 0);
     const log = readClaspLog(dir);
-    assert.ok(
-      log.some((l) => l.includes("clone") && l.includes("abc123")),
-      `clasp log: ${JSON.stringify(log)}`
-    );
+    assert.ok(log.some((l) => l.includes("clone") && l.includes("abc123")));
   });
 
   it("--scriptId and --template are mutually exclusive", () => {

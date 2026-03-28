@@ -7,6 +7,7 @@ import { join } from "node:path";
  * Ensure package.json exists and clasp is installed locally.
  */
 export const ensureClasp = (): void => {
+  if (process.env.HUG_CLASP) return;
   if (!existsSync("package.json")) {
     console.log("Initializing npm project...");
     execSync("npm init -y --quiet", { stdio: "ignore" });
@@ -26,6 +27,7 @@ export const ensureClasp = (): void => {
  * Resolve the path to clasp, preferring local install.
  */
 export const findClasp = (): string => {
+  if (process.env.HUG_CLASP) return process.env.HUG_CLASP;
   if (existsSync("./node_modules/.bin/clasp")) {
     return "./node_modules/.bin/clasp";
   }
