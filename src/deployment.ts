@@ -5,10 +5,10 @@ import { runClasp } from "./clasp.js";
  * Get all non-HEAD deployment lines.
  * If multiple, prompt the user to choose (or use the provided selector for testing).
  */
-export async function selectDeployment(
+export const selectDeployment = async (
   clasp: string,
   select?: (lines: string[]) => Promise<string>
-): Promise<string> {
+): Promise<string> => {
   const output = runClasp(clasp, ["list-deployments"]);
   const lines = output
     .split("\n")
@@ -53,7 +53,7 @@ export async function selectDeployment(
 /**
  * Extract deployment ID from a deployment line like "- AKfycbx... @3 - desc"
  */
-export function deploymentId(line: string): string {
+export const deploymentId = (line: string): string => {
   const parts = line.split(/\s+/);
   return parts[1] || "";
 }
@@ -62,7 +62,7 @@ export function deploymentId(line: string): string {
  * Extract description from a deployment line.
  * Format: "- <id> @<version> - <description>"
  */
-export function deploymentDesc(line: string): string {
+export const deploymentDesc = (line: string): string => {
   const match = line.match(/^- \S+ @\S+ - (.*)$/);
   return match ? match[1] : "";
 }
@@ -70,12 +70,12 @@ export function deploymentDesc(line: string): string {
 /**
  * Update a deployment to a specific version, preserving its description if it has one.
  */
-export function updateDeployment(
+export const updateDeployment = (
   clasp: string,
   id: string,
   version: string,
   desc: string
-): void {
+): void => {
   const args = ["update-deployment", id, "-V", version];
   if (desc) {
     args.push("-d", desc);

@@ -21,7 +21,7 @@ const pkg = JSON.parse(
 );
 const VERSION = pkg.version;
 
-function usage(): void {
+const usage = (): void => {
   console.log(`hug ${VERSION} — a wrapper around clasp
 
 Usage: hug <command> [options]

@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { findClasp, runClasp } from "../clasp.js";
 
-export function cmdPull(args: string[]): void {
+export const cmdPull = (args: string[]): void => {
   let force = false;
   const rest: string[] = [];
 

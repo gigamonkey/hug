@@ -10,7 +10,7 @@ const testDir = dirname(thisFile);
 // When compiled via tsconfig.test.json, this file lives at dist-test/test/helpers.js.
 // The project root is two levels up from the source test/ dir.
 // We find it by looking for package.json.
-export function findProjectRoot(start: string): string {
+export const findProjectRoot = (start: string): string => {
   let dir = start;
   while (dir !== dirname(dir)) {
     if (existsSync(join(dir, "package.json"))) return dir;
@@ -32,18 +32,18 @@ export interface RunResult {
 /**
  * Create a temp directory and return its path.
  */
-export function makeTmpDir(): string {
+export const makeTmpDir = (): string => {
   return mkdtempSync(join(tmpdir(), "hug-test-"));
 }
 
 /**
  * Run the hug TS CLI in a given working directory with mock clasp.
  */
-export function runHug(
+export const runHug = (
   cwd: string,
   args: string[],
   env?: Record<string, string>
-): RunResult {
+): RunResult => {
   const logFile = join(cwd, "clasp.log");
   const mergedEnv: Record<string, string> = {
     ...process.env as Record<string, string>,
@@ -77,7 +77,7 @@ export function runHug(
 /**
  * Read the mock clasp invocation log.
  */
-export function readClaspLog(cwd: string): string[] {
+export const readClaspLog = (cwd: string): string[] => {
   const logFile = join(cwd, "clasp.log");
   if (!existsSync(logFile)) return [];
   return readFileSync(logFile, "utf-8").trim().split("\n").filter(Boolean);
@@ -86,14 +86,14 @@ export function readClaspLog(cwd: string): string[] {
 /**
  * Write a file in the given directory.
  */
-export function writeFile(dir: string, name: string, content: string): void {
+export const writeFile = (dir: string, name: string, content: string): void => {
   writeFileSync(join(dir, name), content);
 }
 
 /**
  * Read a file from the given directory, or return null if missing.
  */
-export function readFile(dir: string, name: string): string | null {
+export const readFile = (dir: string, name: string): string | null => {
   const p = join(dir, name);
   if (!existsSync(p)) return null;
   return readFileSync(p, "utf-8");
@@ -102,7 +102,7 @@ export function readFile(dir: string, name: string): string | null {
 /**
  * Initialize a git repo in the directory (needed for `hug pull` checks).
  */
-export function initGit(dir: string): void {
+export const initGit = (dir: string): void => {
   execFileSync("git", ["init"], { cwd: dir, stdio: "ignore" });
   execFileSync("git", ["add", "."], { cwd: dir, stdio: "ignore" });
   execFileSync("git", ["commit", "-m", "init", "--allow-empty"], {

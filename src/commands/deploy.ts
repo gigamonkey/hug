@@ -6,7 +6,7 @@ import {
   updateDeployment,
 } from "../deployment.js";
 
-export async function cmdDeploy(args: string[]): Promise<void> {
+export const cmdDeploy = async (args: string[]): Promise<void> => {
   if (args[0] === "--help") {
     console.log("Usage: hug deploy [description]");
     console.log("       hug deploy --rollback <version>");

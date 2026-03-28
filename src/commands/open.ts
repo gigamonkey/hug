@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { findClasp, runClasp } from "../clasp.js";
 
-export function cmdOpen(args: string[]): void {
+export const cmdOpen = (args: string[]): void => {
   const clasp = findClasp();
 
   if (args[0] === "--container") {

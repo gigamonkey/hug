@@ -8,7 +8,7 @@ import { basename, resolve } from "node:path";
 import { findClasp, runClasp } from "../clasp.js";
 import { readConfig, writeConfig, type ConfigEntries } from "../config-file.js";
 
-export function cmdFork(args: string[]): void {
+export const cmdFork = (args: string[]): void => {
   let force = false;
   let detach = false;
 

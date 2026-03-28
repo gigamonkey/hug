@@ -9,7 +9,7 @@ export interface ConfigEntries {
  * Read config.js and return key-value pairs.
  * Uses vm.runInNewContext to evaluate the JS and extract the CONFIG object.
  */
-export function readConfig(): ConfigEntries | null {
+export const readConfig = (): ConfigEntries | null => {
   if (!existsSync("config.js")) {
     return null;
   }
@@ -37,7 +37,7 @@ export function readConfig(): ConfigEntries | null {
  * Write config.js from key-value pairs.
  * If entries is empty, removes config.js.
  */
-export function writeConfig(entries: ConfigEntries): void {
+export const writeConfig = (entries: ConfigEntries): void => {
   const keys = Object.keys(entries);
   if (keys.length === 0) {
     if (existsSync("config.js")) {

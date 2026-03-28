@@ -6,7 +6,7 @@ import { join } from "node:path";
 /**
  * Ensure package.json exists and clasp is installed locally.
  */
-export function ensureClasp(): void {
+export const ensureClasp = (): void => {
   if (!existsSync("package.json")) {
     console.log("Initializing npm project...");
     execSync("npm init -y --quiet", { stdio: "ignore" });
@@ -25,7 +25,7 @@ export function ensureClasp(): void {
 /**
  * Resolve the path to clasp, preferring local install.
  */
-export function findClasp(): string {
+export const findClasp = (): string => {
   if (existsSync("./node_modules/.bin/clasp")) {
     return "./node_modules/.bin/clasp";
   }
@@ -47,7 +47,7 @@ const AUTH_ERROR_PATTERN =
  * Run clasp and check for auth errors on failure.
  * Returns stdout on success. On failure, prints stderr and exits.
  */
-export function runClasp(clasp: string, args: string[]): string {
+export const runClasp = (clasp: string, args: string[]): string => {
   try {
     const output = execFileSync(clasp, args, {
       encoding: "utf-8",
@@ -73,7 +73,7 @@ export function runClasp(clasp: string, args: string[]): string {
  * If the project is container-bound, patch parentId into .clasp.json.
  * Uses the Apps Script API to look up the project metadata.
  */
-export function patchParentId(): void {
+export const patchParentId = (): void => {
   if (!existsSync(".clasp.json")) return;
 
   const claspJson = JSON.parse(readFileSync(".clasp.json", "utf-8"));

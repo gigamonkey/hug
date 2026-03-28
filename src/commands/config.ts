@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { readConfig, writeConfig, type ConfigEntries } from "../config-file.js";
 
-export function cmdConfig(args: string[]): void {
+export const cmdConfig = (args: string[]): void => {
   if (args[0] === "--help") {
     console.log("Usage: hug config");
     console.log("       hug config set KEY=VALUE ...");

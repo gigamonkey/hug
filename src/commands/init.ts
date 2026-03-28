@@ -3,7 +3,7 @@ import { basename, resolve } from "node:path";
 import { ensureClasp, findClasp, runClasp, patchParentId } from "../clasp.js";
 import { copyTemplate } from "../templates.js";
 
-export function cmdInit(args: string[]): void {
+export const cmdInit = (args: string[]): void => {
   let template = "";
   let name = "";
   let scriptId = "";
