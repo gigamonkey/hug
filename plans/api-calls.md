@@ -2,9 +2,8 @@
 
 ## Goal
 
-Enable hug to make Apps Script API calls directly (e.g. `hug rename`) by
-reusing the OAuth tokens that clasp already stores in `~/.clasprc.json`. No
-separate login flow needed.
+Enable hug to make Apps Script API calls directly by reusing the OAuth tokens
+that clasp already stores in `~/.clasprc.json`. No separate login flow needed.
 
 ## Background
 
@@ -13,124 +12,54 @@ separate login flow needed.
 REST API. Hug can read those tokens and use them directly, handling token
 refresh as needed.
 
+`patchParentId()` in `src/clasp.ts` already reads `~/.clasprc.json` and makes a
+direct API call via `curl`. The new helper generalizes this pattern using
+Node's built-in `fetch` (no `curl` dependency) and adds token refresh.
+
 ## Implementation
 
-### 1. Shared helper in `lib/common.sh`: `call_apps_script_api`
+### 1. `callAppsScriptApi` helper in `src/clasp.ts` — DONE
 
-Reads `~/.clasprc.json`, refreshes the access token if expired, and makes an
-authenticated API call using `curl`.
+Reads `~/.clasprc.json`, uses the access token, and makes an authenticated API
+call using `fetch`. On a 401, refreshes the token and retries once.
 
-```bash
-# Usage: call_apps_script_api METHOD path [curl-body-args...]
-# METHOD: GET, PATCH, POST, etc.
-# path: e.g. "projects/scriptId"
-# Additional args passed to curl (e.g. -d '{"title":"foo"}')
-#
-# Exits with an error if ~/.clasprc.json is missing or the call fails.
-call_apps_script_api() {
-  local method="$1"
-  local path="$2"
-  shift 2
+Key details discovered during implementation:
+- clasp stores creds under `tokens.default` (not `token` + `oauth2ClientSettings`
+  as older docs suggest). The helper reads from `tokens.default` with fallback
+  to the legacy `token` path.
+- clasp does not store `expiry_date`, so the helper uses the token as-is and
+  refreshes on 401 rather than pre-checking expiry.
+- The API can return HTML error pages on 404/403, so the helper parses the
+  response as text first and handles non-JSON gracefully.
 
-  local creds=~/.clasprc.json
-  if [ ! -f "$creds" ]; then
-    echo "Error: not logged in to clasp. Run 'npx clasp login' first." >&2
-    return 1
-  fi
+### 2. `hug rename` — DROPPED
 
-  local access_token expiry_date refresh_token client_id client_secret
-  access_token=$(jq -r '.token.access_token' "$creds")
-  expiry_date=$(jq -r '.token.expiry_date' "$creds")   # milliseconds
-  refresh_token=$(jq -r '.token.refresh_token' "$creds")
-  client_id=$(jq -r '.oauth2ClientSettings.clientId' "$creds")
-  client_secret=$(jq -r '.oauth2ClientSettings.clientSecret' "$creds")
+The original plan included `hug rename <new-name>` as the first command to use
+the helper. However, the Apps Script API does not support renaming projects.
+The available methods on `projects` are: `create`, `get`, `getContent`,
+`getMetrics`, and `updateContent` — none accept a title update.
 
-  # Refresh if expired (expiry_date is ms, date +%s%3N is ms on Linux;
-  # on macOS use $(date +%s)000 as a close-enough approximation)
-  local now_ms
-  now_ms=$(( $(date +%s) * 1000 ))
-  if [ "$expiry_date" -lt "$now_ms" ]; then
-    local refresh_response
-    refresh_response=$(curl -s -X POST https://oauth2.googleapis.com/token \
-      -d "grant_type=refresh_token" \
-      -d "refresh_token=$refresh_token" \
-      -d "client_id=$client_id" \
-      -d "client_secret=$client_secret")
-    access_token=$(echo "$refresh_response" | jq -r '.access_token')
-    if [ -z "$access_token" ] || [ "$access_token" = "null" ]; then
-      echo "Error: failed to refresh auth token. Try running 'npx clasp login' again." >&2
-      return 1
-    fi
-    # Write refreshed token back so subsequent calls don't re-refresh
-    local new_expiry=$(( now_ms + $(echo "$refresh_response" | jq -r '.expires_in') * 1000 ))
-    local tmp
-    tmp=$(mktemp)
-    jq --arg tok "$access_token" --argjson exp "$new_expiry" \
-      '.token.access_token = $tok | .token.expiry_date = $exp' "$creds" > "$tmp"
-    mv "$tmp" "$creds"
-  fi
+### 3. Future commands
 
-  local base="https://script.googleapis.com/v1"
-  curl -s -X "$method" "$base/$path" \
-    -H "Authorization: Bearer $access_token" \
-    -H "Content-Type: application/json" \
-    "$@"
-}
-```
-
-Dependency: `jq`. Check for it at call site and print a clear error if missing.
-
-### 2. `hug rename <new-name>`
-
-First command to use `call_apps_script_api`. Renames the current project.
-
-```bash
-cmd_rename() {
-  local new_title="$1"
-  if [ -z "$new_title" ]; then
-    echo "Usage: hug rename <new-name>" >&2
-    return 1
-  fi
-
-  local script_id
-  script_id=$(jq -r '.scriptId' .clasp.json 2>/dev/null)
-  if [ -z "$script_id" ] || [ "$script_id" = "null" ]; then
-    echo "Error: no .clasp.json found. Run 'hug init' first." >&2
-    return 1
-  fi
-
-  local result
-  result=$(call_apps_script_api PATCH "projects/$script_id" \
-    -d "{\"title\": \"$new_title\"}" \
-    "?updateMask=title")
-  if echo "$result" | jq -e '.error' > /dev/null 2>&1; then
-    echo "Error: $(echo "$result" | jq -r '.error.message')" >&2
-    return 1
-  fi
-
-  echo "Renamed project to '$new_title'."
-}
-```
-
-### 3. Wire up dispatch
-
-Add `rename) cmd_rename "$@" ;;` to the case statement in `bin/hug`, and add
-`hug rename <new-name>` to the usage/help text.
+`callAppsScriptApi` is available for future commands that use valid API
+endpoints, e.g.:
+- `projects.get` — fetch project metadata
+- `projects.getContent` — fetch script files
+- `projects.deployments.*` — manage deployments directly
 
 ## Error handling
 
 - Missing `~/.clasprc.json` → "Run 'npx clasp login' first"
-- Missing `jq` → "Error: jq is required for this command. Install with: brew install jq"
+- No access token found → "Run 'npx clasp login' first"
 - Token refresh failure → "Try running 'npx clasp login' again"
-- API 403 (insufficient scope) → surface the error message and note that re-running `clasp login` may fix it
+- Non-JSON API response → "API returned {status}: {statusText}"
+- JSON API error → surfaces `result.error.message`
 
 ## Notes
 
 - The token refresh writes back to `~/.clasprc.json`. This matches clasp's own
   behavior (it also updates the file on refresh).
-- `jq` is not currently a hug dependency. It's ubiquitous enough on developer
-  machines that a clear error message is probably sufficient rather than
-  shipping a workaround.
-- This pattern generalizes to any Apps Script API endpoint — future commands
-  (e.g. listing/managing triggers, getting project metadata) can reuse
-  `call_apps_script_api` directly.
+- No new dependencies — `fetch` is built into Node 18+.
+- `patchParentId` can be updated to use the new helper, but since it's
+  fire-and-forget (silently returns on any failure), it may make sense to keep
+  it simple with a separate try/catch wrapper or convert it to async.
