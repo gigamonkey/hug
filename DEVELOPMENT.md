@@ -2,11 +2,18 @@
 
 ## Local testing
 
-There's no build step or test suite. To test locally, run commands directly:
+Build first, then test:
 
 ```bash
-./bin/hug --help
-./bin/hug init --template webapp /tmp/test-project
+npm run build
+npx hug --help
+npx hug init --template webapp /tmp/test-project
+```
+
+Run the test suite:
+
+```bash
+npm test
 ```
 
 To test as if installed globally, link the package:
@@ -24,8 +31,12 @@ npm unlink -g @peterseibel/hug
 
 ## Project structure
 
-- `bin/hug` — CLI entry point (bash). All subcommands live here.
-- `lib/common.sh` — Shared functions sourced by `bin/hug`.
+- `src/cli.ts` — CLI entry point (commander-based).
+- `src/clasp.ts` — Clasp resolution, auth error detection.
+- `src/commands/` — One file per subcommand (init, fork, deploy, etc.).
+- `src/deployment.ts` — Deployment selection and update helpers.
+- `src/config-file.ts` — config.js read/write.
+- `src/templates.ts` — Template resolution.
 - `templates/` — Project templates copied by `hug init`.
 - `plans/` — Implementation plans. `plans/done/` holds completed plans.
 
@@ -78,7 +89,7 @@ The only runtime dependency is `@google/clasp`. It's listed in `package.json`
 so it gets installed when users `npm install -g @peterseibel/hug`.
 
 In user projects created by `hug init`, clasp is installed as a dev dependency
-via `ensure_clasp` in `lib/common.sh`.
+via `ensureClasp` in `src/clasp.ts`.
 
 ## Auth
 

@@ -2,6 +2,9 @@
 
 ## In progress
 
+- [ ] Clean up common.sh. I'm pretty sure it's not used any more and is just a
+  remnant of the old bash implementation.
+
 ## Up next
 
 ## Done
