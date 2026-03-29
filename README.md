@@ -147,10 +147,10 @@ hug deployments
 
 Use `hug fork` and `hug config` combined with git branches to maintain separate
 Apps Script projects. Write code to use config values (e.g. using
-`SPREADSHEET_ID` to a spreadsheet the script should use) rather than using
-container-bound projects and then different branches can use different AppScript
-projects each configured with separate resources as needed. And shared resources
-can be shared by simply using the same config values.
+`SPREADSHEET_ID` to specify a spreadsheet the script should use) rather than
+using container-bound projects and then different branches can use different
+Apps Script projects each configured with separate resources as needed. And
+shared resources can be shared by simply using the same config values.
 
 ```bash
 git switch -c staging
